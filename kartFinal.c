@@ -87,16 +87,3 @@ int add_acceleration(double currentA, double addition, int dir){
 }
 
 ***/
-
-struct vec2 vec2_addition(struct vec2 A, struct vec2 B){
-  struct vec2 total;
-  total.x = A.x + B.x;
-  total.y = A.y + B.y;
-  return total;
-}
-
-struct vec2 scalar_mult(struct vec2 A, double multiplier){
-  A.x = A.x * multiplier;
-  A.y = A.y * multiplier;
-  return A;
-}
