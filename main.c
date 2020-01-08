@@ -55,6 +55,10 @@ void game_loop() {
 			continue;
 		}
 
+		char fps_title[256];
+		snprintf(fps_title, 256, "Mario Kart Clone | %.2lf FPS", 1/dt);
+		SDL_SetWindowTitle(window, fps_title);
+
 		SDL_Event event;
 		while ( SDL_PollEvent( &event ) )
 		{
@@ -136,7 +140,7 @@ char init_sdl()
 
 char init_window()
 {
-	window = SDL_CreateWindow( "Mario Kart Clone", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_size.x, window_size.y, 0 );
+	window = SDL_CreateWindow("Mario Kart Clone", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_size.x, window_size.y, 0);
 
 	if ( window == NULL )
 	{
