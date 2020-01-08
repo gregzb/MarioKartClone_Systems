@@ -6,6 +6,7 @@
 
 #include "vec2.h"
 #include "time_util.h"
+#include "server.h"
 
 char init_sdl();
 char init_window();
@@ -22,26 +23,29 @@ vec2 player_pos = {100, 100};
 SDL_Point wasd = {0, 0};
 char running = 1;
 
-SDL_Window* window;
-SDL_Renderer* renderer;
+SDL_Window *window;
+SDL_Renderer *renderer;
 
 struct timespec init_time;
 struct timespec last_time;
 
 SDL_Texture * bg_image;
 
-int main( int argc, char* args[] )
+int main(int argc, char *args[])
 {
-	//SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-	if ( !(init_sdl() && init_window() && init_renderer()) ) return -1;
+	int child = fork();
 
-	// SDL_Surface * bg_image_surface = SDL_LoadBMP("test_image.bmp");
-	// bg_image = SDL_CreateTextureFromSurface(renderer, bg_image_surface);
-	// SDL_free(bg_image_surface);
+	//child process
+	if (child == 0) {
+		server_main();
+	}
+
+	if (!(init_sdl() && init_window() && init_renderer()))
+		return -1;
 
 	bg_image = load_image("test_image.bmp");
-
-  clock_gettime(CLOCK_MONOTONIC, &init_time);
+	
+	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
 	game_loop();
@@ -51,7 +55,8 @@ void game_loop() {
 	while (running) {
 		double dt = get_delta_time(last_time);
 
-		if (dt < 1/60.0) {
+		if (dt < 1 / 60.0)
+		{
 			continue;
 		}
 
@@ -60,11 +65,14 @@ void game_loop() {
 		SDL_SetWindowTitle(window, fps_title);
 
 		SDL_Event event;
-		while ( SDL_PollEvent( &event ) )
+		while (SDL_PollEvent(&event))
 		{
-			if ( event.type == SDL_QUIT ) {
+			if (event.type == SDL_QUIT)
+			{
 				running = 0;
-			} else if ( (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat) {
+			}
+			else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
+			{
 				process_input(event.type, event.key.keysym);
 			}
 		}
@@ -78,17 +86,25 @@ void game_loop() {
 	}
 }
 
-void process_input(int type, SDL_Keysym keysym) {
+void process_input(int type, SDL_Keysym keysym)
+{
 	int multiplier = type == SDL_KEYDOWN ? 1 : -1;
-	if (keysym.sym == SDLK_w) {
+	if (keysym.sym == SDLK_w)
+	{
 		wasd.y -= multiplier;
-	} else if (keysym.sym == SDLK_s) {
+	}
+	else if (keysym.sym == SDLK_s)
+	{
 		wasd.y += multiplier;
-	} else if (keysym.sym == SDLK_a) {
+	}
+	else if (keysym.sym == SDLK_a)
+	{
 		wasd.x -= multiplier;
-	} else if (keysym.sym == SDLK_d) {
+	}
+	else if (keysym.sym == SDLK_d)
+	{
 		wasd.x += multiplier;
- }
+	}
 }
 
 void render(double dt)
@@ -129,7 +145,7 @@ void render(double dt)
 
 char init_sdl()
 {
-	if ( SDL_Init( SDL_INIT_EVERYTHING ) == -1 )
+	if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
 	{
 		printf("Failed to initialize SDL: %s\n", SDL_GetError());
 		return 0;
@@ -142,7 +158,7 @@ char init_window()
 {
 	window = SDL_CreateWindow("Mario Kart Clone", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_size.x, window_size.y, 0);
 
-	if ( window == NULL )
+	if (window == NULL)
 	{
 		printf("Failed to create window: %s\n", SDL_GetError());
 		return 0;
@@ -153,14 +169,14 @@ char init_window()
 
 char init_renderer()
 {
-	renderer = SDL_CreateRenderer( window, -1, 0 );
+	renderer = SDL_CreateRenderer(window, -1, 0);
 
-	if ( renderer == NULL )
+	if (renderer == NULL)
 	{
 		printf("Failed to create renderer: %s\n", SDL_GetError());
 		return 0;
 	}
-	SDL_RenderSetLogicalSize( renderer, window_size.x, window_size.y );
+	SDL_RenderSetLogicalSize(renderer, window_size.x, window_size.y);
 
 	return 1;
 }
