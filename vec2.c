@@ -52,6 +52,11 @@ vec2 v2_rotate(vec2 a, double angle) {
   return (vec2) {co*a.x - si*a.y, si*a.x + co*a.y};
 }
 
+vec2 v2_normalize(vec2 a){
+  //FIX THIS LATER!!!
+  return vec2 a;
+}
+
 void v2_print(vec2 a) {
   printf("<%lf, %lf>", a.x, a.y);
 }
