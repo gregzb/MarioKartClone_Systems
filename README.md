@@ -16,7 +16,7 @@ We will be using SDL to display graphics using basic sprites to represent each k
 * Topics Covered in Class
   * Networking: one user will be able to host a server allowing up to three others to connect to it. The networking code will synchronize game state between the four clients, with the server acting as the authoritative source of state. We will pass around only a single struct. Any messages must be encoded in that struct.
   * Forking: at startup of the client, a separate process will be started, in which a server instance will be run if the user elects.
-  * Signals: if the client elects to start hosting a multiplayer game, a signal will be sent to the other process to indicate a server should start running. To stop it, the main process will send SIGINT.
+  * Signals: if a user chooses to host a multiplayer session, the client will send `SIGUSR1` to the server process forked at the beginning of the client's execution. The server process will then begin executing server functions, including running the game loop and accepting network connections. When the user chooses to terminate the multiplayer game, the server process will be sent `SIGUSR2`, which will lead it to clean up and return to a dormant state until and if it receives `SIGUSR1` again. (If finer-grained communication is desired, we may use pipes instead, but this will likely not be necessary).
   * Working with files: Saving data (config, save files)
 * Breaking Up the Project
   * Greg → collisions, graphics
