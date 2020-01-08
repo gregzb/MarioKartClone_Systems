@@ -1,4 +1,5 @@
 #pragma once
+
 struct vec2 {
   double x;
   double y;
@@ -29,5 +30,7 @@ char v2_equal(vec2 a, vec2 b);
 
 //angle is in rad
 vec2 v2_rotate(vec2 a, double angle);
+
+vec2 v2_normalize(vec2 a);
 
 void v2_print(vec2 a);
