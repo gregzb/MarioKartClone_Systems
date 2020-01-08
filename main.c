@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+
 #include "vec2.h"
 
 char init_sdl();
@@ -11,6 +13,8 @@ char init_renderer();
 void game_loop();
 void render();
 void process_input(int type, SDL_Keysym keysym);
+
+SDL_Texture * load_image();
 
 void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td);
 
@@ -25,10 +29,18 @@ SDL_Renderer* renderer;
 struct timespec init_time;
 struct timespec last_time;
 
+SDL_Texture * bg_image;
+
 int main( int argc, char* args[] )
 {
-	if ( !(init_sdl() && init_window() && init_renderer()) )
-		return -1;
+	//SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	if ( !(init_sdl() && init_window() && init_renderer()) ) return -1;
+
+	// SDL_Surface * bg_image_surface = SDL_LoadBMP("test_image.bmp");
+	// bg_image = SDL_CreateTextureFromSurface(renderer, bg_image_surface);
+	// SDL_free(bg_image_surface);
+
+	bg_image = load_image("test_image.bmp");
 
   clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
@@ -64,7 +76,7 @@ void game_loop() {
 		player_pos.x += wasd.x * 200 * dt;
 		player_pos.y += wasd.y * 200 * dt;
 
-		render();
+		render(dt);
 
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
@@ -83,27 +95,44 @@ void process_input(int type, SDL_Keysym keysym) {
  }
 }
 
-void render()
+void render(double dt)
 {
-	// Clear the window and make it all green
+	struct timespec current_time;
+	clock_gettime(CLOCK_MONOTONIC, &current_time);
+	struct timespec run_time_spec;
+	sub_timespec(init_time, current_time, &run_time_spec);
+
+	double run_time = run_time_spec.tv_sec + run_time_spec.tv_nsec/1000000000.0;
+
+	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
 	SDL_RenderClear( renderer );
 
-	// Change color to blue
-	SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
+	SDL_Rect rect2;
+	rect2.x = player_pos.x;
+	rect2.y = player_pos.y;
+	rect2.w = 64*3;
+	rect2.h = 48*3;
 
-	// Render our "player"
-	SDL_Rect rect;
-	rect.x = player_pos.x;
-	rect.y = player_pos.y;
-	rect.w = 40;
-	rect.h = 25;
+	//SDL_RenderCopyEx(renderer, bg_image, NULL, &rect2, sin(run_time * 2) * 40, NULL, 0);
+	//SDL_RenderCopyEx(renderer, bg_image, &rect2, NULL, sin(run_time * 2) * 40, NULL, 0);
 
-	SDL_RenderFillRect( renderer, &rect );
+	SDL_RenderCopyEx(renderer, bg_image, &rect2, NULL, 0, NULL, 0);
 
-	// Change color to green
-	SDL_SetRenderDrawColor( renderer, 0, 255, 0, 255 );
+	// SDL_Rect rect3;
+	// rect3.x = 100;
+	// rect3.y = -100;
+	// rect3.w = 64*10;
+	// rect3.h = 48*10;
+	// SDL_RenderCopyEx(renderer, bg_image, NULL, &rect3, 0, NULL, 0);
 
-	// Render the changes above
+	// SDL_SetRenderDrawColor( renderer, 20, 150, 200, 255 );
+	// SDL_Rect rect;
+	// rect.x = player_pos.x;
+	// rect.y = player_pos.y;
+	// rect.w = 40;
+	// rect.h = 25;
+	// SDL_RenderFillRect( renderer, &rect );
+
 	SDL_RenderPresent( renderer);
 }
 
@@ -160,4 +189,18 @@ char init_renderer()
 	SDL_RenderSetLogicalSize( renderer, window_size.x, window_size.y );
 
 	return 1;
+}
+
+SDL_Texture* load_image(char* file_name)
+{
+    SDL_Surface* surface = SDL_LoadBMP(file_name);
+    if (surface == NULL) {
+        printf("Failed to load image %s error: %s\n", file_name, SDL_GetError());
+        return NULL;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface( renderer, surface );
+    SDL_FreeSurface( surface );
+
+    return texture;
 }
