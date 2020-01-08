@@ -1,5 +1,8 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "vec2.h"
 
 char init_sdl();
 char init_window();
@@ -9,24 +12,45 @@ void game_loop();
 void render();
 void process_input(int type, SDL_Keysym keysym);
 
+void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td);
+
 SDL_Point window_size = {640, 480};
-SDL_Point player_pos = {100, 100};
+vec2 player_pos = {100, 100};
 SDL_Point wasd = {0, 0};
 char running = 1;
 
 SDL_Window* window;
 SDL_Renderer* renderer;
 
+struct timespec init_time;
+struct timespec last_time;
+
 int main( int argc, char* args[] )
 {
 	if ( !(init_sdl() && init_window() && init_renderer()) )
 		return -1;
+
+  clock_gettime(CLOCK_MONOTONIC, &init_time);
+	last_time = init_time;
 
 	game_loop();
 }
 
 void game_loop() {
 	while (running) {
+
+		struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+
+    struct timespec delta_timespec;
+    sub_timespec(last_time, current_time, &delta_timespec);
+
+		double dt = delta_timespec.tv_sec + delta_timespec.tv_nsec/1000000000.0;
+
+		if (dt < 1/60.0) {
+			continue;
+		}
+
 		SDL_Event event;
 		while ( SDL_PollEvent( &event ) )
 		{
@@ -37,12 +61,12 @@ void game_loop() {
 			}
 		}
 
-		player_pos.x += wasd.x * 10;
-		player_pos.y += wasd.y * 10;
+		player_pos.x += wasd.x * 200 * dt;
+		player_pos.y += wasd.y * 200 * dt;
 
 		render();
 
-		SDL_Delay(16);
+		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
 }
 
@@ -81,6 +105,23 @@ void render()
 
 	// Render the changes above
 	SDL_RenderPresent( renderer);
+}
+
+enum { NS_PER_SECOND = 1000000000 };
+
+void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td) {
+    td->tv_nsec = t2.tv_nsec - t1.tv_nsec;
+    td->tv_sec  = t2.tv_sec - t1.tv_sec;
+    if (td->tv_sec > 0 && td->tv_nsec < 0)
+    {
+        td->tv_nsec += NS_PER_SECOND;
+        td->tv_sec--;
+    }
+    else if (td->tv_sec < 0 && td->tv_nsec > 0)
+    {
+        td->tv_nsec -= NS_PER_SECOND;
+        td->tv_sec++;
+    }
 }
 
 char init_sdl()
