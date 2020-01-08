@@ -6,12 +6,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define PORT 40934
+
 enum client_packet_type
 {
-    REQUEST_CONNECTION
+    REQUEST_CONNECTION,
+    //sent so server does not disconnect client
+    KEEP_ALIVE
 };
 
 struct connection_request {};
+struct keep_alive {};
 
 //a tagged union representing all possible client messages
 struct client_packet 
@@ -19,6 +24,7 @@ struct client_packet
     enum client_packet_type type;
     union {
         struct connection_request connection_request;
+        struct keep_alive keep_alive;
     } data;
 };
 
