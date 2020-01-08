@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "vec2.h"
+#include "time_util.h"
 
 char init_sdl();
 char init_window();
@@ -15,8 +16,6 @@ void render();
 void process_input(int type, SDL_Keysym keysym);
 
 SDL_Texture * load_image();
-
-void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td);
 
 SDL_Point window_size = {640, 480};
 vec2 player_pos = {100, 100};
@@ -50,14 +49,7 @@ int main( int argc, char* args[] )
 
 void game_loop() {
 	while (running) {
-
-		struct timespec current_time;
-    clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-    struct timespec delta_timespec;
-    sub_timespec(last_time, current_time, &delta_timespec);
-
-		double dt = delta_timespec.tv_sec + delta_timespec.tv_nsec/1000000000.0;
+		double dt = get_delta_time(last_time);
 
 		if (dt < 1/60.0) {
 			continue;
@@ -97,12 +89,7 @@ void process_input(int type, SDL_Keysym keysym) {
 
 void render(double dt)
 {
-	struct timespec current_time;
-	clock_gettime(CLOCK_MONOTONIC, &current_time);
-	struct timespec run_time_spec;
-	sub_timespec(init_time, current_time, &run_time_spec);
-
-	double run_time = run_time_spec.tv_sec + run_time_spec.tv_nsec/1000000000.0;
+	double run_time = get_delta_time(init_time);
 
 	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
 	SDL_RenderClear( renderer );
@@ -134,23 +121,6 @@ void render(double dt)
 	// SDL_RenderFillRect( renderer, &rect );
 
 	SDL_RenderPresent( renderer);
-}
-
-enum { NS_PER_SECOND = 1000000000 };
-
-void sub_timespec(struct timespec t1, struct timespec t2, struct timespec *td) {
-    td->tv_nsec = t2.tv_nsec - t1.tv_nsec;
-    td->tv_sec  = t2.tv_sec - t1.tv_sec;
-    if (td->tv_sec > 0 && td->tv_nsec < 0)
-    {
-        td->tv_nsec += NS_PER_SECOND;
-        td->tv_sec--;
-    }
-    else if (td->tv_sec < 0 && td->tv_nsec > 0)
-    {
-        td->tv_nsec -= NS_PER_SECOND;
-        td->tv_sec++;
-    }
 }
 
 char init_sdl()
