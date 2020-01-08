@@ -44,7 +44,7 @@ int main(int argc, char *args[])
 		return -1;
 
 	bg_image = load_image("test_image.bmp");
-	
+
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
