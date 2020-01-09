@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "vec2.h"
 #include "time_util.h"
@@ -38,13 +40,15 @@ int main(int argc, char *args[])
 	//child process
 	if (child == 0) {
 		server_main();
+		//does there need to be a return here?
+		//return 0;
 	}
 
 	if (!(init_sdl() && init_window() && init_renderer()))
 		return -1;
 
-	bg_image = load_image("test_image.bmp");
-	
+	bg_image = load_image("resources/images/test_image.bmp");
+
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 

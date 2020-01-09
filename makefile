@@ -1,7 +1,7 @@
 TARGET_EXEC ?= kart
 
 BUILD_DIR ?= ./out
-SRC_DIRS ?= ./
+SRC_DIRS ?= ./src
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -13,8 +13,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 #$(pkg-config --cflags --libs sdl2)
 #-Wall
-LDFLAGS ?= -lm -I/usr/include/SDL2 -lSDL2 -std=gnu11
-CFLAGS = -Wall -I/usr/include/SDL2 -lSDL2
+LDFLAGS ?= -lm $(shell pkg-config --libs --cflags sdl2) -std=gnu11
+CFLAGS = -Wall $(shell pkg-config --libs --cflags sdl2)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)

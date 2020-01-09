@@ -30,6 +30,10 @@ vec2 v2_sub(vec2 a, vec2 b) {
   return (vec2) {a.x-b.x, a.y-b.y};
 }
 
+vec2 v2_mult(vec2 a, double b) {
+  return (vec2) {a.x*b, a.y*b};
+}
+
 double v2_dot(vec2 a, vec2 b) {
   return a.x*b.x + a.y+b.y;
 }
@@ -50,6 +54,12 @@ vec2 v2_rotate(vec2 a, double angle) {
   double co = cos(angle);
   double si = sin(angle);
   return (vec2) {co*a.x - si*a.y, si*a.x + co*a.y};
+}
+
+vec2 v2_normalize(vec2 a) {
+  double mag = v2_mag(a);
+  if (mag == 0) return (vec2) {0, 0};
+  return v2_mult(a, 1/v2_mag(a));
 }
 
 void v2_print(vec2 a) {
