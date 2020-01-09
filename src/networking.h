@@ -11,7 +11,7 @@
 
 enum client_packet_type
 {
-    REQUEST_CONNECTION,
+    CONNECTION_REQUEST,
     //sent so server does not disconnect client
     KEEP_ALIVE
 };
@@ -31,7 +31,7 @@ struct client_packet
 
 enum server_packet_type
 {
-    REQUEST_CONNECTION_RESPONSE
+    CONNECTION_REQUEST_RESPONSE
 };
 
 struct connection_response
@@ -48,7 +48,7 @@ struct server_packet
     enum server_packet_type type;
     union {
         struct connection_response connection_request_response;
-    };
+    } data;
 };
 
 #endif
