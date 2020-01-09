@@ -6,8 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define PORT "40934"
-#define MAX_CLIENTS 4
+#define PORT 40934
 
 enum client_packet_type
 {
