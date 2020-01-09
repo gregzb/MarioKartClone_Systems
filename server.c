@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
@@ -8,8 +10,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "networking.h"
+
+struct client
+{
+    int socket_id;
+};
+
+int server_setup();
 
 void server_main()
 {
@@ -23,6 +34,11 @@ void server_main()
     sigwait(&sigset, &caught_signal);
 
     int socket = server_setup();
+
+    struct client clients[MAX_CLIENTS];
+    int num_clients = 0;
+
+
 }
 
 // CODE BELOW IS DIRECTLY "FORKED" FROM MR. DW
@@ -74,4 +90,25 @@ int server_setup()
     free(hints);
     freeaddrinfo(results);
     return sd;
+}
+
+/*=========================
+  listen_for_client
+  args: int sd
+  sd should refer to a socket in the listening state
+  run the accept call
+  returns the socket descriptor for the new socket connected
+  to the client.
+  =========================*/
+int listen_for_client(int sd)
+{
+    int client_socket;
+    socklen_t sock_size;
+    struct sockaddr_storage client_address;
+
+    sock_size = sizeof(client_address);
+    client_socket = accept4(sd, (struct sockaddr *)&client_address, &sock_size, O_NONBLOCK);
+    error_check(client_socket, "server accept");
+
+    return client_socket;
 }
