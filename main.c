@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "vec2.h"
 #include "time_util.h"
@@ -38,6 +40,8 @@ int main(int argc, char *args[])
 	//child process
 	if (child == 0) {
 		server_main();
+		//does there need to be a return here?
+		//return 0;
 	}
 
 	if (!(init_sdl() && init_window() && init_renderer()))
