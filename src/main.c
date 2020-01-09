@@ -47,7 +47,7 @@ int main(int argc, char *args[])
 	if (!(init_sdl() && init_window() && init_renderer()))
 		return -1;
 
-	bg_image = load_image("test_image.bmp");
+	bg_image = load_image("resources/images/test_image.bmp");
 
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
