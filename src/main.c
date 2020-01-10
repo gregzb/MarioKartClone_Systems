@@ -11,6 +11,7 @@
 #include "vec2.h"
 #include "time_util.h"
 #include "server.h"
+#include "kart.h"
 
 char init_sdl();
 char init_window();
@@ -23,8 +24,8 @@ void process_input(int type, SDL_Keysym keysym);
 SDL_Texture * load_image();
 
 SDL_Point window_size = {640, 480};
-vec2 player_pos = {100, 100};
 SDL_Point wasd = {0, 0};
+struct kart main_kart;
 char running = 1;
 
 SDL_Window *window;
@@ -54,6 +55,9 @@ int main(int argc, char *args[])
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
+	main_kart = kart_init();
+	main_kart.position = (vec2){640/2, 480/2};
+
 	game_loop();
 }
 
@@ -61,8 +65,7 @@ void game_loop() {
 	while (running) {
 		double dt = get_delta_time(last_time);
 
-		if (dt < 1 / 60.0)
-		{
+		if (dt < 1 / 60.0) {
 			continue;
 		}
 
@@ -71,8 +74,7 @@ void game_loop() {
 		SDL_SetWindowTitle(window, fps_title);
 
 		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
+		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT)
 			{
 				running = 0;
@@ -83,8 +85,10 @@ void game_loop() {
 			}
 		}
 
-		player_pos.x += wasd.x * 200 * dt;
-		player_pos.y += wasd.y * 200 * dt;
+		kart_move(&main_kart, wasd.y, wasd.x, dt);
+
+		// player_pos.x += wasd.x * 200 * dt;
+		// player_pos.y += wasd.y * 200 * dt;
 
 		render(dt);
 
@@ -97,11 +101,11 @@ void process_input(int type, SDL_Keysym keysym)
 	int multiplier = type == SDL_KEYDOWN ? 1 : -1;
 	if (keysym.sym == SDLK_w)
 	{
-		wasd.y -= multiplier;
+		wasd.y += multiplier;
 	}
 	else if (keysym.sym == SDLK_s)
 	{
-		wasd.y += multiplier;
+		wasd.y -= multiplier;
 	}
 	else if (keysym.sym == SDLK_a)
 	{
@@ -120,16 +124,27 @@ void render(double dt)
 	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
 	SDL_RenderClear( renderer );
 
-	SDL_Rect rect2;
-	rect2.x = player_pos.x;
-	rect2.y = player_pos.y;
-	rect2.w = 64*3;
-	rect2.h = 48*3;
+	SDL_RenderCopy(renderer, bg_image, NULL, NULL);
+
+	SDL_Rect rect;
+	rect.x = main_kart.position.x;
+	rect.y = main_kart.position.y;
+	rect.w = 20;
+	rect.h = 20;
+
+	SDL_SetRenderDrawColor( renderer, 200, 200, 40, 255 );
+	SDL_RenderFillRect( renderer, &rect );
+
+	// SDL_Rect rect2;
+	// rect2.x = player_pos.x;
+	// rect2.y = player_pos.y;
+	// rect2.w = 64*3;
+	// rect2.h = 48*3;
 
 	//SDL_RenderCopyEx(renderer, bg_image, NULL, &rect2, sin(run_time * 2) * 40, NULL, 0);
 	//SDL_RenderCopyEx(renderer, bg_image, &rect2, NULL, sin(run_time * 2) * 40, NULL, 0);
 
-	SDL_RenderCopyEx(renderer, bg_image, &rect2, NULL, 0, NULL, 0);
+	// SDL_RenderCopyEx(renderer, bg_image, &rect2, NULL, 0, NULL, 0);
 
 	// SDL_Rect rect3;
 	// rect3.x = 100;

@@ -1,0 +1,77 @@
+[
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I./src",
+            "-Wall",
+            "-D_REENTRANT",
+            "-I/usr/include/SDL2",
+            "-o",
+            "out/./src/main.c.o",
+            "src/main.c"
+        ],
+        "directory": "/home/angeredgecko/Documents/Systems/MarioKartClone_Systems",
+        "file": "src/main.c"
+    },
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I./src",
+            "-Wall",
+            "-D_REENTRANT",
+            "-I/usr/include/SDL2",
+            "-o",
+            "out/./src/vec2.c.o",
+            "src/vec2.c"
+        ],
+        "directory": "/home/angeredgecko/Documents/Systems/MarioKartClone_Systems",
+        "file": "src/vec2.c"
+    },
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I./src",
+            "-Wall",
+            "-D_REENTRANT",
+            "-I/usr/include/SDL2",
+            "-o",
+            "out/./src/server.c.o",
+            "src/server.c"
+        ],
+        "directory": "/home/angeredgecko/Documents/Systems/MarioKartClone_Systems",
+        "file": "src/server.c"
+    },
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I./src",
+            "-Wall",
+            "-D_REENTRANT",
+            "-I/usr/include/SDL2",
+            "-o",
+            "out/./src/kart.c.o",
+            "src/kart.c"
+        ],
+        "directory": "/home/angeredgecko/Documents/Systems/MarioKartClone_Systems",
+        "file": "src/kart.c"
+    },
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-I./src",
+            "-Wall",
+            "-D_REENTRANT",
+            "-I/usr/include/SDL2",
+            "-o",
+            "out/./src/time_util.c.o",
+            "src/time_util.c"
+        ],
+        "directory": "/home/angeredgecko/Documents/Systems/MarioKartClone_Systems",
+        "file": "src/time_util.c"
+    }
+]
