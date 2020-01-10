@@ -159,8 +159,9 @@ void server_main()
 
 void remove_client(struct client *clients, size_t *length, size_t index)
 {
-    printf("remove_client: todo\n");
-    exit(1);
+    close(clients[index].socket_descriptor);
+
+    //
 }
 
 // CODE BELOW IS DIRECTLY "FORKED" FROM MR. DW
@@ -231,13 +232,18 @@ int try_listen_for_client(int sd)
     struct sockaddr_storage client_address;
 
     sock_size = sizeof(client_address);
-    client_socket = accept4(sd, (struct sockaddr *)&client_address, &sock_size, O_NONBLOCK);
+    client_socket = accept(sd, (struct sockaddr *)&client_address, &sock_size);
+
     if (client_socket < 0)
     {
         if (errno != EAGAIN && errno != EWOULDBLOCK)
         {
-            error_check(client_socket, "accept4 client socket");
+            error_check(client_socket, "accept client socket");
         }
+    }
+
+    if(client_socket > -1) {
+        error_check(fcntl(client_socket, F_SETFL, fcntl(client_socket, F_GETFL, 0) | O_NONBLOCK), "set O_NONBLOCK");
     }
 
     return client_socket;
