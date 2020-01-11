@@ -73,23 +73,6 @@ def main():
   else:
     solve_image(sys.argv[2])
 
-  # image_file_name = sys.argv[1]
-  # im = Image.open(image_file_name)
-  #
-  # pixel_data = im.load()
-  # w, h = im.size
-  #
-  # bounds = Rect(0, 0, w, h)
-  #
-  # id = 0
-  #
-  # for x in range(w):
-  #   for y in range(h):
-  #     if (x, y) not in visited:
-  #       #print(row, col)
-  #       dfs(pixel_data, (x, y), bounds, id)
-  #       id += 1
-
   print(f"Found {id} bounds")
 
   boxes = []
@@ -106,6 +89,15 @@ def main():
       max_y = max(max_y, point[1])
 
     boxes.append(Rect(min_x, min_y, max_x - min_x, max_y - min_y))
+
+  with open('resources/levels/testlevel.lvl', 'wb') as f:
+    f.write(b'resources/images/test4.bmp\0')
+    #f.write((65534).to_bytes(4, byteorder='big'))
+    for box in boxes:
+      f.write(box.x.to_bytes(4, byteorder='big'))
+      f.write(box.y.to_bytes(4, byteorder='big'))
+      f.write(box.w.to_bytes(4, byteorder='big'))
+      f.write(box.h.to_bytes(4, byteorder='big'))
 
   print(boxes)
 

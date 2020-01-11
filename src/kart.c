@@ -8,9 +8,9 @@
 // const double CONSTANT_ACCEL = 100;//REMEMBER TO SET THESE PROPERLY BEFORE STARTING
 // const double MAX_ACCEL = 100000; //REMEMBER TO
 
-const double MAX_VELOCITY = 2;
-const double CONSTANT_ACCEL = 100;
-const double ROTATION_SPEED = 1.25;
+const double MAX_VELOCITY = 3;
+const double CONSTANT_ACCEL = 10;
+const double ROTATION_SPEED = 2.25;
 const double DRAG = 0.08;
 
 struct kart kart_init(){
@@ -44,7 +44,7 @@ struct kart kart_init(){
 
 void kart_move(struct kart * current_kart, char acc, char lr, double dt){// lr should be -1 for left, 1 for right, 0 for neither
   //printf("%lf %lf\n", v2_mag(current_kart->velocity), dt);
-  if (v2_mag(current_kart->velocity) > dt * 2) {
+  if (v2_mag(current_kart->velocity) > dt * 10) {
     kart_update_direction(current_kart, lr, dt);
   }
   vec2 accel = v2_mult(v2_normalize(current_kart->direction), CONSTANT_ACCEL * acc * dt);
