@@ -80,6 +80,7 @@ void server_main()
                      .last_received = current_time,
                      .id = next_id++};
                 clients[num_clients++] = new_client;
+                printf("(testing server) new client connected; % clients\n", num_clients);
             }
             else
             {
@@ -117,10 +118,10 @@ void server_main()
                 //handle messages
                 switch (packet.type)
                 {
-                    case CONNECTION_REQUEST:
+                case CONNECTION_REQUEST:
                     //todo
                     break;
-                    case KEEP_ALIVE:
+                case KEEP_ALIVE:
                     //dummy, does nothing
                     break;
                 }
@@ -140,15 +141,38 @@ void server_main()
         }
 
         //start game if all possible client connected
-        if (num_clients == MAX_CLIENTS) break;
+        if (num_clients == MAX_CLIENTS)
+            break;
 
         //if the 30 second countdown has elapsed and there are at least two players start
-        else if (current_time.tv_sec - countdown_start.tv_sec >= 30 && num_clients > 1) break;
+        else if (current_time.tv_sec - countdown_start.tv_sec >= 30 && num_clients > 1)
+            break;
 
-        //TODO: send wait message to all clients
+        struct server_packet wait_packet = {.type = WAIT_STATUS};
+        struct wait_status wait_status = {.seconds_left = current_time.tv_sec - countdown_start.tv_sec,
+                                          .client_ids_length = num_clients};
+        //fill client_ids
+        for (int i = 0; i < num_clients; i++)
+        {
+            wait_status.client_ids[i] = clients[i].id;
+        }
+        wait_packet.data.wait_status = wait_status;
 
-        //TODO: spin until 500ms consumed
+        //send wait status to all clients
+        for (int i = 0; i < num_clients; i++)
+        {
+            write(clients[i].socket_descriptor, &wait_packet, sizeof wait_packet);
+        }
+
+        //spin until 1s elapsed
+        struct timespec spin_time;
+        do
+        {
+            clock_gettime(CLOCK_MONOTONIC, &current_time);
+        } while (spin_time.tv_sec < current_time.tv_sec + 1);
     }
+
+    printf("(testing) game loop started!");
 
     //TODO: handle game start code
 
@@ -161,7 +185,12 @@ void remove_client(struct client *clients, size_t *length, size_t index)
 {
     close(clients[index].socket_descriptor);
 
-    //
+    for (size_t i = index; i < *length - 1; i++)
+    {
+        clients[i] = clients[i + 1];
+    }
+
+    (*length)--;
 }
 
 // CODE BELOW IS DIRECTLY "FORKED" FROM MR. DW
@@ -242,7 +271,8 @@ int try_listen_for_client(int sd)
         }
     }
 
-    if(client_socket > -1) {
+    if (client_socket > -1)
+    {
         error_check(fcntl(client_socket, F_SETFL, fcntl(client_socket, F_GETFL, 0) | O_NONBLOCK), "set O_NONBLOCK");
     }
 
