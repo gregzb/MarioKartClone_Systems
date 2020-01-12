@@ -31,7 +31,8 @@ struct client_packet
 
 enum server_packet_type
 {
-    CONNECTION_REQUEST_RESPONSE
+    CONNECTION_REQUEST_RESPONSE,
+    WAIT_STATUS
 };
 
 struct connection_response
@@ -43,11 +44,20 @@ struct connection_response
     uint8_t id;
 };
 
+//sent to clients while they are waiting for game start
+struct wait_status
+{
+    int seconds_left;
+    int client_ids[MAX_CLIENTS];
+    size_t client_ids_length;
+};
+
 struct server_packet
 {
     enum server_packet_type type;
     union {
         struct connection_response connection_request_response;
+        struct wait_status wait_status;
     } data;
 };
 
