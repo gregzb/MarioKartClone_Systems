@@ -80,7 +80,7 @@ void server_main()
                      .last_received = current_time,
                      .id = next_id++};
                 clients[num_clients++] = new_client;
-                printf("(testing server) new client connected; % clients\n", num_clients);
+                printf("(testing server) new client connected; %zd clients\n", num_clients);
             }
             else
             {
@@ -168,7 +168,7 @@ void server_main()
         struct timespec spin_time;
         do
         {
-            clock_gettime(CLOCK_MONOTONIC, &current_time);
+            clock_gettime(CLOCK_MONOTONIC, &spin_time);
         } while (spin_time.tv_sec < current_time.tv_sec + 1);
     }
 
