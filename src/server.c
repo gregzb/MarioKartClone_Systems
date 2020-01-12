@@ -62,6 +62,7 @@ void server_main()
         int new_connection = try_listen_for_client(socket);
         if (new_connection)
         {
+            //wot is this type
             struct server_packet packet = {.type = CONNECTION_REQUEST_RESPONSE};
             struct connection_response response = {0};
 
@@ -80,7 +81,7 @@ void server_main()
                      .last_received = current_time,
                      .id = next_id++};
                 clients[num_clients++] = new_client;
-                printf("(testing server) new client connected; % clients\n", num_clients);
+                printf("(testing server) new client connected; %ld clients\n", num_clients);
             }
             else
             {
