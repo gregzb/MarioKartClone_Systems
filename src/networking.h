@@ -21,11 +21,18 @@ enum client_packet_type
 {
     CONNECTION_REQUEST,
     //sent so server does not disconnect client
-    KEEP_ALIVE
+    KEEP_ALIVE,
+    CURRENT_INPUTS
 };
 
 struct connection_request {};
 struct keep_alive {};
+
+//used for client to send its msgs during game
+struct current_inputs
+{
+    //TODO: sunan-- figure out what server needs 
+};
 
 //a tagged union representing all possible client messages
 struct client_packet
@@ -34,13 +41,14 @@ struct client_packet
     union {
         struct connection_request connection_request;
         struct keep_alive keep_alive;
+        struct current_inputs current_inputs;
     } data;
 };
 
 enum server_packet_type
 {
     CONNECTION_REQUEST_RESPONSE,
-    WAIT_STATUS
+    WAIT_STATUS,
 };
 
 struct connection_response

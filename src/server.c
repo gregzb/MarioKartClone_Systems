@@ -16,6 +16,16 @@ struct client
     int socket_descriptor;
     struct timespec last_received;
     int id;
+    //TODO: sunan-- add fields for game state
+    //kart (use kart stuff: has positions, acceleration, etc)
+    //currently pressed keys
+    //other info you need
+};
+
+enum game_state
+{
+    WAITING_FOR_CLIENTS,
+    IN_RACE
 };
 
 int server_setup();
@@ -50,6 +60,8 @@ void server_main(int read_pipe)
     struct timespec countdown_start;
     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
 
+    enum game_state game_state = WAITING_FOR_CLIENTS;
+
     while (true)
     {
         struct timespec current_time;
@@ -63,8 +75,8 @@ void server_main(int read_pipe)
             struct server_packet packet = {.type = CONNECTION_REQUEST_RESPONSE};
             struct connection_response response = {0};
 
-            //rejected if MAX_CLIENTS reached
-            response.accepted = !(num_clients == MAX_CLIENTS);
+            //rejected if MAX_CLIENTS reached or we're not waiting for clients
+            response.accepted = !(num_clients >= MAX_CLIENTS) && game_state == WAITING_FOR_CLIENTS;
             response.id = next_id;
 
             packet.data.connection_request_response = response;
@@ -76,7 +88,7 @@ void server_main(int read_pipe)
                 struct client new_client =
                     {.socket_descriptor = new_connection,
                      .last_received = current_time,
-                     .id = next_id++}; 
+                     .id = next_id++};
                 clients[num_clients++] = new_client;
                 printf("(testing server) new client connected; %zd clients\n", num_clients);
                 countdown_start = current_time;
@@ -121,6 +133,9 @@ void server_main(int read_pipe)
                 case KEEP_ALIVE:
                     //dummy, does nothing
                     break;
+                case CURRENT_INPUTS:
+                    //TODO: sunan-- add code that does game logic
+                    break;
                 }
 
                 clients[i].last_received = current_time;
@@ -139,26 +154,43 @@ void server_main(int read_pipe)
 
         //start game if all possible client connected
         if (num_clients == MAX_CLIENTS)
-            break;
+        {
+            game_state = IN_RACE;
+            continue;
+        }
 
         //if the countdown has elapsed and there are at least two players start
         else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 1)
-            break;
-
-        struct server_packet wait_packet = {.type = WAIT_STATUS};
-        struct wait_status wait_status = {.seconds_left = CONNECT_COUNTDOWN - (current_time.tv_sec - countdown_start.tv_sec),
-                                          .client_ids_length = num_clients};
-        //fill client_ids
-        for (int i = 0; i < num_clients; i++)
         {
-            wait_status.client_ids[i] = clients[i].id;
+            game_state = IN_RACE;
+            continue;
         }
-        wait_packet.data.wait_status = wait_status;
+
+        struct server_packet packet = {0};
+
+        if (game_state == WAITING_FOR_CLIENTS)
+        {
+            packet.type = WAIT_STATUS;
+            struct wait_status wait_status = {.seconds_left = CONNECT_COUNTDOWN - (current_time.tv_sec - countdown_start.tv_sec),
+                                              .client_ids_length = num_clients};
+            //fill client_ids
+            for (int i = 0; i < num_clients; i++)
+            {
+                wait_status.client_ids[i] = clients[i].id;
+            }
+            packet.data.wait_status = wait_status;
+        }
+        else if (game_state == IN_RACE)
+        {
+            //TODO: sunan-- calculate new kart positions using kart_move
+
+            //TODO: then initialize packet with all data
+        }
 
         //send wait status to all clients
         for (int i = 0; i < num_clients; i++)
         {
-            write(clients[i].socket_descriptor, &wait_packet, sizeof wait_packet);
+            write(clients[i].socket_descriptor, &packet, sizeof packet);
         }
 
         //spin until 1s elapsed
@@ -168,14 +200,6 @@ void server_main(int read_pipe)
             clock_gettime(CLOCK_MONOTONIC, &spin_time);
         } while (spin_time.tv_sec < current_time.tv_sec + 1);
     }
-
-    printf("(testing) game loop started!");
-
-    //TODO: handle game start code
-
-    //send game start packet(s) here
-
-    //game loop here
 }
 
 void remove_client(struct client *clients, size_t *length, size_t index)
