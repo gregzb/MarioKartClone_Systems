@@ -28,7 +28,7 @@ struct connection_request {};
 struct keep_alive {};
 
 //a tagged union representing all possible client messages
-struct client_packet 
+struct client_packet
 {
     enum client_packet_type type;
     union {

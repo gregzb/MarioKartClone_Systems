@@ -59,7 +59,11 @@ void server_main(int read_pipe)
         int new_connection = try_listen_for_client(socket);
         if (new_connection != -1)
         {
+<<<<<<< HEAD
             printf("Server: got new connection.");
+=======
+            //wot is this type
+>>>>>>> b884dbeb89d70a91cf856df78e793bd732e75443
             struct server_packet packet = {.type = CONNECTION_REQUEST_RESPONSE};
             struct connection_response response = {0};
 
@@ -78,8 +82,12 @@ void server_main(int read_pipe)
                      .last_received = current_time,
                      .id = next_id++};
                 clients[num_clients++] = new_client;
+<<<<<<< HEAD
                 printf("(testing server) new client connected; %zd clients\n", num_clients);
                 countdown_start = current_time;
+=======
+                printf("(testing server) new client connected; %ld clients\n", num_clients);
+>>>>>>> b884dbeb89d70a91cf856df78e793bd732e75443
             }
             else
             {
