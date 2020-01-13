@@ -56,8 +56,7 @@ int main(int argc, char *args[])
 	if (pid == 0)
 	{
 		server_main(pipe_descriptors[0]);
-		//does there need to be a return here?
-		//return 0;
+		return 0;
 	}
 
 	if (!(init_sdl() && init_window() && init_renderer()))
