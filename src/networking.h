@@ -5,6 +5,14 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
 
 #define PORT "40934"
 #define MAX_CLIENTS 4
@@ -60,5 +68,11 @@ struct server_packet
         struct wait_status wait_status;
     } data;
 };
+
+int connect_to_server(char *ip);
+void error_check(int i, char *s);
+int server_setup();
+int try_listen_for_client(int sd);
+int connect_to_server(char *ip);
 
 #endif
