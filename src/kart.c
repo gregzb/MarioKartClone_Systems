@@ -13,12 +13,13 @@ const double CONSTANT_ACCEL = 10;
 const double ROTATION_SPEED = 2.25;
 const double DRAG = 0.065;
 
-struct kart kart_init(){
+struct kart kart_init()
+{
   struct kart temp;
-  temp.direction = (vec2) {0, -1};
-  temp.position = (vec2) {0};
-  temp.velocity = (vec2) {0};
-  temp.acceleration = (vec2) {0};
+  temp.direction = (vec2){0, -1};
+  temp.position = (vec2){0};
+  temp.velocity = (vec2){0};
+  temp.acceleration = (vec2){0};
   return temp;
 }
 
@@ -42,10 +43,12 @@ struct kart kart_init(){
 //   kart->acceleration.y = y;
 // }
 
-void kart_move(struct kart * current_kart, char acc, char lr, double dt){// lr should be -1 for left, 1 for right, 0 for neither
+void kart_move(struct kart *current_kart, char acc, char lr, double dt)
+{ // lr should be -1 for left, 1 for right, 0 for neither
   //printf("%lf %lf\n", v2_mag(current_kart->velocity), dt);
-  current_kart->velocity = v2_mult(current_kart->velocity, 1-DRAG);
-  if (v2_mag(current_kart->velocity) > dt * 20) {
+  current_kart->velocity = v2_mult(current_kart->velocity, 1 - DRAG);
+  if (v2_mag(current_kart->velocity) > dt * 20)
+  {
     kart_update_direction(current_kart, lr, dt);
   }
   vec2 accel = v2_mult(v2_normalize(current_kart->direction), CONSTANT_ACCEL * acc * dt);
@@ -54,21 +57,25 @@ void kart_move(struct kart * current_kart, char acc, char lr, double dt){// lr s
   kart_update_position(current_kart);
 }
 
-void kart_update_direction(struct kart * current_kart, char lr, double dt) {
+void kart_update_direction(struct kart *current_kart, char lr, double dt)
+{
   //1 degree
   //current_kart->direction = v2_rotate(current_kart->direction, lr * dt * 0.0174533);
   current_kart->direction = v2_rotate(current_kart->direction, lr * dt * ROTATION_SPEED);
 }
 
-void kart_update_position(struct kart * current_kart) {
+void kart_update_position(struct kart *current_kart)
+{
   //current_kart->position = v2_add(current_kart->position, v2_mult(current_kart->velocity, dt));
   current_kart->position = v2_add(current_kart->position, current_kart->velocity);
 }
 
-void kart_update_velocity(struct kart * current_kart) {
+void kart_update_velocity(struct kart *current_kart)
+{
   //current_kart->velocity = v2_add(current_kart->velocity, v2_mult(current_kart->acceleration, dt));
   current_kart->velocity = v2_add(current_kart->velocity, current_kart->acceleration);
-  if (v2_mag(current_kart->velocity) > MAX_VELOCITY) {
+  if (v2_mag(current_kart->velocity) > MAX_VELOCITY)
+  {
     current_kart->velocity = v2_mult(v2_normalize(current_kart->velocity), MAX_VELOCITY);
   }
 }
