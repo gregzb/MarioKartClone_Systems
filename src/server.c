@@ -6,15 +6,10 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 #include "networking.h"
+
+#define CONNECT_COUNTDOWN 30
 
 struct client
 {
@@ -30,16 +25,18 @@ int try_listen_for_client(int sd);
 //removes clients[index] from clients, shifting
 void remove_client(struct client *clients, size_t *length, size_t index);
 
-void server_main()
+void server_main(int read_pipe)
 {
-    //create signal set with SIGUSR!
-    sigset_t sigset;
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGUSR1);
+    printf("Waiting for pipe write from main process.\n");
 
-    //wait for SIGUSR1, indicates server will start
-    int caught_signal;
-    sigwait(&sigset, &caught_signal);
+    //TODO: use data type conveying meaning
+
+    bool buffer;
+
+    //block until we are told to start network code
+    read(read_pipe, &buffer, sizeof buffer);
+
+    printf("Starting network code.\n");
 
     int socket = server_setup();
 
@@ -60,8 +57,9 @@ void server_main()
 
         //handle new conenctions
         int new_connection = try_listen_for_client(socket);
-        if (new_connection)
+        if (new_connection != -1)
         {
+            printf("Server: got new connection.");
             struct server_packet packet = {.type = CONNECTION_REQUEST_RESPONSE};
             struct connection_response response = {0};
 
@@ -81,6 +79,7 @@ void server_main()
                      .id = next_id++};
                 clients[num_clients++] = new_client;
                 printf("(testing server) new client connected; %zd clients\n", num_clients);
+                countdown_start = current_time;
             }
             else
             {
@@ -100,7 +99,6 @@ void server_main()
                 if (size == 0)
                 {
                     remove_client(clients, &num_clients, i--);
-                    countdown_start = current_time;
                     break;
                 }
                 else if (size < 0)
@@ -110,7 +108,6 @@ void server_main()
                     {
                         printf("Error reading from client socket: %s\n", strerror(errno));
                         remove_client(clients, &num_clients, i--);
-                        countdown_start = current_time;
                     }
                     break;
                 }
@@ -144,12 +141,12 @@ void server_main()
         if (num_clients == MAX_CLIENTS)
             break;
 
-        //if the 30 second countdown has elapsed and there are at least two players start
-        else if (current_time.tv_sec - countdown_start.tv_sec >= 30 && num_clients > 1)
+        //if the countdown has elapsed and there are at least two players start
+        else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 1)
             break;
 
         struct server_packet wait_packet = {.type = WAIT_STATUS};
-        struct wait_status wait_status = {.seconds_left = current_time.tv_sec - countdown_start.tv_sec,
+        struct wait_status wait_status = {.seconds_left = CONNECT_COUNTDOWN - (current_time.tv_sec - countdown_start.tv_sec),
                                           .client_ids_length = num_clients};
         //fill client_ids
         for (int i = 0; i < num_clients; i++)
@@ -191,90 +188,4 @@ void remove_client(struct client *clients, size_t *length, size_t index)
     }
 
     (*length)--;
-}
-
-// CODE BELOW IS DIRECTLY "FORKED" FROM MR. DW
-
-void error_check(int i, char *s)
-{
-    if (i < 0)
-    {
-        fprintf(stderr, "[%s] error %d: %s\n", s, errno, strerror(errno));
-        exit(1);
-    }
-}
-
-/*=========================
-  server_setup
-  args:
-  creates, binds a server side socket
-  and sets it to the listening state
-  returns the socket descriptor
-  =========================*/
-int server_setup()
-{
-    int sd, i;
-
-    //create the socket
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-    error_check(sd, "server socket");
-    printf("[server] socket created\n");
-
-    error_check(fcntl(sd, F_SETFL, fcntl(sd, F_GETFL, 0) | O_NONBLOCK), "set server socket to nonblock");
-
-    //setup structs for getaddrinfo
-    struct addrinfo *hints, *results;
-    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
-    hints->ai_family = AF_INET;               //IPv4 address
-    hints->ai_socktype = SOCK_STREAM;         //TCP socket
-    hints->ai_flags = AI_PASSIVE;             //Use all valid addresses
-    getaddrinfo(NULL, PORT, hints, &results); //NULL means use local address
-
-    //bind the socket to address and port
-    i = bind(sd, results->ai_addr, results->ai_addrlen);
-    error_check(i, "server bind");
-    printf("[server] socket bound\n");
-
-    //set socket to listen state
-    i = listen(sd, 10);
-    error_check(i, "server listen");
-    printf("[server] socket in listen state\n");
-
-    //free the structs used by getaddrinfo
-    free(hints);
-    freeaddrinfo(results);
-    return sd;
-}
-
-/*=========================
-  try_listen_for_client
-  args: int sd
-  sd should refer to a socket in the listening state
-  run the accept call
-  returns the socket descriptor for the new socket connected
-  to the client, or -1 if no accept available
-  =========================*/
-int try_listen_for_client(int sd)
-{
-    int client_socket;
-    socklen_t sock_size;
-    struct sockaddr_storage client_address;
-
-    sock_size = sizeof(client_address);
-    client_socket = accept(sd, (struct sockaddr *)&client_address, &sock_size);
-
-    if (client_socket < 0)
-    {
-        if (errno != EAGAIN && errno != EWOULDBLOCK)
-        {
-            error_check(client_socket, "accept client socket");
-        }
-    }
-
-    if (client_socket > -1)
-    {
-        error_check(fcntl(client_socket, F_SETFL, fcntl(client_socket, F_GETFL, 0) | O_NONBLOCK), "set O_NONBLOCK");
-    }
-
-    return client_socket;
 }

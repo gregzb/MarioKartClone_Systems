@@ -5,6 +5,6 @@
 #define SERVER_HEADER
 
 //runs network code
-void server_main();
+void server_main(int);
 
 #endif
