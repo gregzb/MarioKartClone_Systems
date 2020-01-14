@@ -66,7 +66,6 @@ int server_setup()
   =========================*/
 int try_listen_for_client(int sd)
 {
-    printf("Running try_listen_for.");
     int client_socket;
     socklen_t sock_size;
     struct sockaddr_storage client_address;
@@ -89,6 +88,7 @@ int try_listen_for_client(int sd)
 
     return client_socket;
 }
+//return bound socket if connction accepted, or -1 otherwise
 int connect_to_server(char *ip)
 {
     int sd;
@@ -113,5 +113,11 @@ int connect_to_server(char *ip)
     free(hints);
     freeaddrinfo(results);
 
-    return i != -1 ? sd : -1;
+    if (i < 0)
+    {
+        close(sd);
+        return -1;
+    }
+
+    return sd;
 }
