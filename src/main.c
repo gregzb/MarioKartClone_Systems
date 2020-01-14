@@ -26,6 +26,7 @@ char init_renderer();
 void game_loop();
 void render();
 void process_input(int type, SDL_Keysym keysym);
+enum game_state process_choice_input(SDL_Keysym keysym);
 
 SDL_Texture *load_image();
 
@@ -44,9 +45,21 @@ struct timespec last_time;
 struct level test_level;
 SDL_Texture *ship_tex;
 
+int pipe_descriptors[2];
+
+enum game_state
+{
+	MENU = 0,
+	SINGLE_PLAYER,
+	//single player only
+	PAUSED,
+	CONNECTING,
+	WAIT_PERIOD,
+	MULTIPLAYER
+};
+
 int main(int argc, char *args[])
 {
-	int pipe_descriptors[2];
 	error_check(pipe(pipe_descriptors), "created pipe.");
 	int pid = fork();
 
@@ -65,95 +78,6 @@ int main(int argc, char *args[])
 	//TEST CODE FOR MULTIPLAYER
 	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
 
-	bool multiplayer = false;
-	bool hosting = false;
-
-	SDL_Event event;
-	while (SDL_WaitEvent(&event))
-	{
-		if (event.type == SDL_QUIT)
-		{
-			running = 0;
-			break;
-		}
-		else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
-		{
-			if (event.key.keysym.sym == SDLK_o)
-			{
-				printf("Selected single player mode.\n");
-				break;
-			}
-			else if (event.key.keysym.sym == SDLK_m)
-			{
-				printf("Selected connection mode mode.\n");
-				multiplayer = true;
-				break;
-			}
-			else if (event.key.keysym.sym == SDLK_h)
-			{
-				printf("Selected hosting mode.\n");
-				multiplayer = true;
-				hosting = true;
-				break;
-			}
-		}
-	}
-
-	int server_socket = -1;
-
-	if (multiplayer)
-	{
-		if (hosting) 
-		{
-			//TODO: write value with meaning
-			write(pipe_descriptors[1], &multiplayer, sizeof multiplayer);
-		}
-		sleep(2);
-
-		//TODO: handle error case & retrying without exiting
-		server_socket = connect_to_server("127.0.0.1");
-
-		if (server_socket < 0)
-		{
-			printf("Failed to connect to localhost server.\n");
-			exit(1);
-		}
-	}
-
-	if (multiplayer)
-	{
-		while (true)
-		{
-			struct server_packet server_packet;
-			ssize_t size = read(server_socket, &server_packet, sizeof server_packet);
-
-			if (size == 0)
-			{
-				printf("Connection to server closed unexpectedly.\n");
-			}
-			else if (size < 0)
-			{
-				if (errno != EWOULDBLOCK && errno != EAGAIN)
-				{
-					printf("Error reading from server socket: %s\n", strerror(errno));
-					exit(1);
-				}
-				break;
-			}
-
-			switch (server_packet.type)
-			{
-			case WAIT_STATUS:
-				printf("%d seconds left until game start.\n", server_packet.data.wait_status.seconds_left);
-				break;
-			}
-
-			struct client_packet keep_alive = {.type = KEEP_ALIVE};
-
-			write(server_socket, &keep_alive, sizeof keep_alive);
-		}
-	}
-
 	//bg_image = load_image("resources/images/test4.bmp");
 	test_level = level_init(renderer, "resources/levels/testlevel.lvl");
 	ship_tex = load_image(renderer, "resources/images/smolship.bmp");
@@ -169,6 +93,11 @@ int main(int argc, char *args[])
 
 void game_loop()
 {
+	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
+
+	enum game_state game_state = MENU;
+	int server_socket = -1;
+
 	while (running)
 	{
 		double dt = get_delta_time(last_time);
@@ -191,16 +120,74 @@ void game_loop()
 			}
 			else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
 			{
-				process_input(event.type, event.key.keysym);
+				if (!game_state)
+				{
+					game_state = process_choice_input(event.key.keysym);
+				}
+				else
+					process_input(event.type, event.key.keysym);
 			}
 		}
 
-		kart_move(&main_kart, wasd.y, wasd.x, dt);
+		if (game_state == CONNECTING)
+		{
+			server_socket = connect_to_server("127.0.0.1");
+			if (server_socket != -1)
+			{
+				game_state = MULTIPLAYER;
+			}
+			continue;
+		}
 
-		// player_pos.x += wasd.x * 200 * dt;
-		// player_pos.y += wasd.y * 200 * dt;
+		if (game_state == MULTIPLAYER)
+		{
+			struct server_packet serv_msg;
 
-		render(dt);
+			//get all queued messages
+			while (true)
+			{
+				ssize_t size = read(server_socket, &serv_msg, sizeof serv_msg);
+
+				if (size == 0)
+				{
+					//handle gracefully
+					printf("Connection to server closed unexpectedly.\n");
+					break;
+				}
+				else if (size < 0)
+				{
+					if (errno != EWOULDBLOCK && errno != EAGAIN)
+					{
+						printf("Error reading from server socket: %s\n", strerror(errno));
+
+						//TODO: handle gracefully
+						exit(1);
+					}
+					break;
+				}
+
+				switch (serv_msg.type)
+				{
+				case WAIT_STATUS:
+					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
+				}
+			}
+
+			//TODO: send data based on current state
+			//This is correct for wait mode
+			struct client_packet keep_alive = {.type = KEEP_ALIVE};
+			write(server_socket, &keep_alive, sizeof keep_alive);
+		}
+
+		if (game_state == SINGLE_PLAYER || game_state == MULTIPLAYER)
+		{
+			kart_move(&main_kart, wasd.y, wasd.x, dt);
+
+			// player_pos.x += wasd.x * 200 * dt;
+			// player_pos.y += wasd.y * 200 * dt;
+
+			render(dt);
+		}
 
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
@@ -224,6 +211,28 @@ void process_input(int type, SDL_Keysym keysym)
 	else if (keysym.sym == SDLK_d)
 	{
 		wasd.x += multiplier;
+	}
+}
+
+enum game_state process_choice_input(SDL_Keysym keysym)
+{
+	bool msg = true;
+
+	switch (keysym.sym)
+	{
+	case SDLK_o:
+		printf("Selected single player mode.\n");
+		return SINGLE_PLAYER;
+	case SDLK_m:
+		printf("Selected connection mode mode.\n");
+		return CONNECTING;
+	case SDLK_h:
+		write(pipe_descriptors[1], &msg, sizeof msg);
+
+		return CONNECTING;
+		printf("Selected hosting mode.\n");
+	default:
+		return MENU;
 	}
 }
 
