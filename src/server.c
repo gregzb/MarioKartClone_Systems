@@ -215,13 +215,6 @@ void server_main(int read_pipe)
         {
             write(clients[i].socket_descriptor, &packet, sizeof packet);
         }
-
-        //spin until 1s elapsed
-        struct timespec spin_time;
-        do
-        {
-            clock_gettime(CLOCK_MONOTONIC, &spin_time);
-        } while (spin_time.tv_sec < current_time.tv_sec + 1);
     }
 }
 
