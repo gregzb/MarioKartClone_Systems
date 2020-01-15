@@ -9,10 +9,9 @@
 
 #include "networking.h"
 #include "kart.h"
-
+#include "time_util.h"
 
 #define CONNECT_COUNTDOWN 30
-#define MAX_INPUTS 4
 
 struct client
 {
@@ -20,7 +19,7 @@ struct client
     struct timespec last_received;
     int id;
     struct kart cart;
-    char inputs[MAX_INPUTS];
+    SDL_Point wasd;
     //TODO: sunan-- add fields for client
     //kart (use kart stuff: has positions, acceleration, etc)
     //currently pressed keys
@@ -33,12 +32,11 @@ enum game_state
     IN_RACE
 };
 
-int server_setup();
-
-int try_listen_for_client(int sd);
-
 //removes clients[index] from clients, shifting
 void remove_client(struct client *clients, size_t *length, size_t index);
+
+//gets dt time depending on game state
+double min_loop_time(enum game_state);
 
 void server_main(int read_pipe)
 {
@@ -67,13 +65,19 @@ void server_main(int read_pipe)
 
     enum game_state game_state = WAITING_FOR_CLIENTS;
 
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+
     while (true)
     {
-        struct timespec current_time;
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        double dt = get_delta_time(current_time);
 
-        struct kart client_cart; 
-        char client_messages[MAX_INPUTS];
+        if (dt < min_loop_time(game_state))
+        {
+            continue;
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
 
         //handle new conenctions
         int new_connection = try_listen_for_client(socket);
@@ -97,8 +101,8 @@ void server_main(int read_pipe)
                     {.socket_descriptor = new_connection,
                      .last_received = current_time,
                      .id = next_id++,
-                     .cart = client_cart,
-                     .inputs = client_messages};
+                     .cart = kart_init(),
+                     .wasd = {0}};
                 clients[num_clients++] = new_client;
                 printf("(testing server) new client connected; %zd clients\n", num_clients);
                 countdown_start = current_time;
@@ -140,13 +144,18 @@ void server_main(int read_pipe)
                 case CONNECTION_REQUEST:
                     //todo
                     break;
+                    case KEEP_ALIVE:
                     //dummy, does nothing
                     break;
                 case CURRENT_INPUTS:
-                    //TODO: sunan-- add code that does game logic
-                   for (int k = 0; k < size; k++){
-                       clients[i].inputs[k] = read(clients[i].socket_descriptor, &packet, sizeof(char));
-                   }
+                    for (int i = 0; i < num_clients; i++)
+                    {
+                        if (clients[i].id == packet.data.current_inputs.id)
+                        {
+                            clients[i].wasd = packet.data.current_inputs.wasd;
+                            break;
+                        }
+                    }
                 }
 
                 clients[i].last_received = current_time;
@@ -193,29 +202,10 @@ void server_main(int read_pipe)
         }
         else if (game_state == IN_RACE)
         {
-            //TODO: sunan-- calculate new kart positions using kart_move
-            /*
-            for (int k = 0; k < MAX_CLIENTS; k++) {
-
-                for (int j = 0; j < MAX_INPUTS; j++) {
-
-                    if (strcmp(clients[k].inputs[j], 'w') == 0){
-                            kart_move(&clients[k].cart, char acc, char lr, double dt);
-                        }
-                        if (strcmp(clients[k].inputs[j], 'a') == 0){
-                            kart_move(&clients[k].cart, char acc, char lr, double dt);
-                        }
-                        if (strcmp(clients[k].inputs[j], 's') == 0){
-                            kart_move(&clients[k].cart, char acc, char lr, double dt);
-                        }
-                        if (strcmp(clients[k].inputs[j], 'd') == 0){
-                            kart_move(&clients[k].cart, char acc, char lr, double dt);
-                        }
-
-                }
-
-            } */
-
+            for (int i = 0; i < num_clients; i++)
+            {
+                kart_move(&clients[i].cart, clients[i].wasd.y, clients[i].wasd.x, dt);
+            }
 
             //TODO: then initialize packet with all data
         }
@@ -245,4 +235,15 @@ void remove_client(struct client *clients, size_t *length, size_t index)
     }
 
     (*length)--;
+}
+
+double min_loop_time(enum game_state state)
+{
+    switch (state)
+    {
+    case WAITING_FOR_CLIENTS:
+        return 1.0;
+    default:
+        return 1.0 / 30.0;
+    }
 }
