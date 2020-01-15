@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <errno.h>
+#include <string.h>
 
 #include "vec2.h"
 #include "time_util.h"
@@ -33,8 +34,8 @@ void process_input(int type, SDL_Keysym keysym);
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
 SDL_Point mouse_pos = {0, 0};
-char* mouse_clicked = 0;
-char* mouse_prev_down = 0;
+char mouse_clicked = 0;
+char mouse_prev_down = 0;
 struct kart karts[4];
 int num_karts = 1;
 char running = 1;
@@ -53,6 +54,8 @@ TTF_Font *font = NULL;
 
 int server_pipe[2];
 int server_socket = -1;
+
+char server_ip[16];
 
 enum game_state
 {
@@ -104,8 +107,6 @@ int main(int argc, char *args[])
 	karts[1] = kart_init();
 	karts[1].position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
 
-	printf("%lf, %lf\n", karts[1].position.x, karts[1].position.y);
-
 	num_karts = 2;
 
 	game_loop();
@@ -133,8 +134,6 @@ void game_loop()
 		mouse_clicked = (bitmask & SDL_BUTTON(1) && !mouse_prev_down);
 		mouse_prev_down = bitmask & SDL_BUTTON(1) ? 1 : 0;
 
-		printf("%d\n", mouse_clicked);
-
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
@@ -148,18 +147,36 @@ void game_loop()
 			}
 		}
 
-		if (game_state == MENU) {
+		if (game_state == MENU)
+		{
 			render_menu(dt);
 		}
 
 		if (game_state == CONNECTING)
 		{
-			server_socket = connect_to_server("127.0.0.1");
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderClear(renderer);
+			SDL_Surface *solid = TTF_RenderText_Solid(font, "Connecting to ", (SDL_Color){255, 255, 255, 255});
+			SDL_Texture *text_texture = surface_to_texture(renderer, solid);
+
+			SDL_Rect text_bounds = {window_size.x/2, window_size.y/2, 0, 0};
+
+			SDL_QueryTexture(text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h);
+			text_bounds.x -= text_bounds.w/2;
+			text_bounds.y -= text_bounds.h/2;
+
+			SDL_RenderCopy(renderer, text_texture, NULL, &text_bounds);
+			SDL_RenderPresent(renderer);
+
+			printf("Trying to connect to %s\n", server_ip);
+			server_socket = connect_to_server(server_ip);
+			printf("got back: %d\n", server_socket);
 			if (server_socket != -1)
 			{
-				game_state = MULTIPLAYER;
+				next_game_state = MULTIPLAYER;
+			} else {
+				next_game_state = MENU;
 			}
-			continue;
 		}
 
 		if (game_state == MULTIPLAYER)
@@ -182,7 +199,6 @@ void game_loop()
 					if (errno != EWOULDBLOCK && errno != EAGAIN)
 					{
 						printf("Error reading from server socket: %s\n", strerror(errno));
-
 						//TODO: handle gracefully
 						exit(1);
 					}
@@ -195,7 +211,6 @@ void game_loop()
 					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
 					break;
 				}
-
 			}
 
 			//TODO: send data based on current state
@@ -235,6 +250,13 @@ void process_input(int type, SDL_Keysym keysym)
 	{
 		wasd.x += multiplier;
 	}
+
+	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
+	{
+		next_game_state = MENU;
+
+		//DARIUS, NEXTWORKING CLEANUP HERE
+	}
 }
 
 // enum game_state process_choice_input(SDL_Keysym keysym)
@@ -259,37 +281,48 @@ void process_input(int type, SDL_Keysym keysym)
 // 	}
 // }
 
-void render_menu(double dt) {
+void render_menu(double dt)
+{
 	SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
 	SDL_RenderClear(renderer);
 
-	SDL_SetRenderDrawColor(renderer, 90, 50, 150, 255);
+	SDL_Rect single_rect = {window_size.x / 2, 300, 600, 100};
+	single_rect.x -= single_rect.w / 2;
+	single_rect.y -= single_rect.h / 2;
 
-	SDL_Rect single_rect = {window_size.x/2, window_size.y/2, 600, 125};
-	single_rect.x -= single_rect.w/2;
-	single_rect.y -= single_rect.h/2;
+	char mouse_over_single = render_button(renderer, &single_rect, (SDL_Color){90, 50, 150, 255}, font, "Singleplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_single && mouse_clicked)
+	{
+		next_game_state = SINGLE_PLAYER;
+	}
 
-	SDL_RenderFillRect(renderer, &single_rect);
+	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};
+	multi_create.x -= multi_create.w / 2;
+	multi_create.y -= multi_create.h / 2;
 
-	SDL_Surface* solid = TTF_RenderText_Solid( font, "Singleplayer", (SDL_Color) {255, 255, 255, 255} );
-	SDL_Texture *text_texture = surface_to_texture( renderer, solid );
+	char mouse_over_create = render_button(renderer, &multi_create, (SDL_Color){90, 50, 150, 255}, font, "Create Multiplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_create && mouse_clicked)
+	{
+		bool msg = true;
+		write(server_pipe[1], &msg, sizeof msg);
+		strncpy(server_ip, "127.0.0.1", 15);
+		next_game_state = CONNECTING;
+	}
 
-	SDL_Rect text_bounds = {0, 0, 0, 0};
+	SDL_Rect multi_join = {window_size.x / 2, 600, 600, 100};
+	multi_join.x -= multi_join.w / 2;
+	multi_join.y -= multi_join.h / 2;
 
-	SDL_QueryTexture( text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h );
-	double asp_ratio = text_bounds.h / (double)text_bounds.w;
-
-	//printf("%lf\n", asp_ratio);
-
-	SDL_Rect text_rect = single_rect;
-	text_rect.x += 10;
-	text_rect.y += 10;
-	//text_rect.w -= 20;
-	//text_rect.h = (int) (text_rect.w * asp_ratio);
-	text_rect.h -= 20;
-	text_rect.w = (int) (text_rect.h * (1 / asp_ratio));
-
-	SDL_RenderCopy( renderer, text_texture, NULL, &text_rect );
+	char mouse_over_join = render_button(renderer, &multi_join, (SDL_Color){90, 50, 150, 255}, font, "Join Multiplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_join && mouse_clicked)
+	{
+		printf("Server IP: ");
+		fflush(stdout);
+		fgets(server_ip, 16, stdin);
+		if(server_ip[14] == '\n') server_ip[14] = 0;
+		next_game_state = CONNECTING;
+		SDL_Delay(500);
+	}
 
 	SDL_RenderPresent(renderer);
 }
@@ -313,7 +346,7 @@ void render_game(double dt)
 
 	double rot_angle = v2_angle(karts[0].direction);
 
-	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle* 180 / (M_PI))-90, &rot_point, 0);
+	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
 
 	SDL_Rect center;
 	center.w = 25;
@@ -323,30 +356,34 @@ void render_game(double dt)
 
 	SDL_RenderCopyEx(renderer, ship_tex, NULL, &center, -90, NULL, 0);
 
-	for (int i = 1; i < num_karts; i++) {
+	for (int i = 1; i < num_karts; i++)
+	{
 		vec2 subbed = v2_sub(karts[i].position, karts[0].position);
 		vec2 mult = v2_mult(subbed, 2);
-		vec2 rotted = v2_rotate(mult, -rot_angle-M_PI/2);
-		vec2 added = v2_add(rotted, (vec2) {center.x + center.w / 2, center.y + center.w / 2});
+		vec2 rotted = v2_rotate(mult, -rot_angle - M_PI / 2);
+		vec2 added = v2_add(rotted, (vec2){center.x + center.w / 2, center.y + center.w / 2});
 
 		SDL_Rect kart_render_pos;
 		kart_render_pos.w = 25;
 		kart_render_pos.h = 25;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
-		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle* 180 / M_PI) + 180, NULL, 0);
+		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180, NULL, 0);
 	}
 
 	SDL_RenderPresent(renderer);
 }
 
-char init_text() {
-	if (TTF_Init() == -1) {
+char init_text()
+{
+	if (TTF_Init() == -1)
+	{
 		printf("Failed to initialize TTF: %s\n", SDL_GetError());
 		return 0;
 	}
-	font = TTF_OpenFont("resources/fonts/Roboto-Black.ttf", 120 );
-	if (font == NULL) {
+	font = TTF_OpenFont("resources/fonts/Roboto-Black.ttf", 120);
+	if (font == NULL)
+	{
 		printf("Failed to load font: %s\n", SDL_GetError());
 		return 0;
 	}

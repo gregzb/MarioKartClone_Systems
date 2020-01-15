@@ -19,6 +19,7 @@
 
 #define PORT "40934"
 #define MAX_CLIENTS 4
+#define MIN_CLIENTS 2
 
 //num inputs desired + 1 for '\0'
 #define MAX_INPUTS 5
