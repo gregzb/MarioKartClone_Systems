@@ -26,10 +26,9 @@ Realized current method of physics will not work. Rewrote into a completely new 
 
 __1/5/20__ Emma:
 
-Fixed up errors found in the initial physics code. 
+Fixed up errors found in the initial physics code.
 
 
 __1/4/20__ Emma:
 
-Made initial draft of the basic physics code. Was able to get particle to move in all four directions, and accelerate using jerk. 
-
+Made initial draft of the basic physics code. Was able to get particle to move in all four directions, and accelerate using jerk.
