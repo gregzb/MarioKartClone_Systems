@@ -23,6 +23,9 @@ __1/14/20__ Darius:
 
 Integrated networking into game logic, added base state management. Removed debugging, fixed connect to server.
 
+__1/13/20__ Sunan:
+Worked off of Darius' notes in netowrking and server code. Worked on adding fields for clients, handling basic messages, and updating current_inputs.
+
 
 __1/13/20__ Darius:
 
@@ -48,6 +51,8 @@ __1/11/20__ Greg:
 
 doot.goot. Some refactoring, added level type, added level struct, Made the Kart rotate around the ship. 
 
+__1/9/20__ Sunan:
+Worked on some basic networking and servers based off of MR. DWs boilerplate and Darius' progress. Looked into listening for server and countdown functions based off Darius' skeleton.
 
 __1/8/20__ Greg:
 
