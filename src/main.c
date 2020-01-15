@@ -33,6 +33,8 @@ void process_input(int type, SDL_Keysym keysym);
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
 SDL_Point mouse_pos = {0, 0};
+char* mouse_clicked = 0;
+char* mouse_prev_down = 0;
 struct kart karts[4];
 int num_karts = 1;
 char running = 1;
@@ -126,7 +128,12 @@ void game_loop()
 		snprintf(fps_title, 256, "Mario Kart Clone | %.2lf FPS", 1 / dt);
 		SDL_SetWindowTitle(window, fps_title);
 
-		SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
+		int bitmask = SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
+
+		mouse_clicked = (bitmask & SDL_BUTTON(1) && !mouse_prev_down);
+		mouse_prev_down = bitmask & SDL_BUTTON(1) ? 1 : 0;
+
+		printf("%d\n", mouse_clicked);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
