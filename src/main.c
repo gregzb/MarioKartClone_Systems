@@ -170,7 +170,9 @@ void game_loop()
 				{
 				case WAIT_STATUS:
 					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
+					break;
 				}
+
 			}
 
 			//TODO: send data based on current state
