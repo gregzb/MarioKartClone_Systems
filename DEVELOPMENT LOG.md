@@ -16,7 +16,7 @@ Realized new method will still not mimic the Mario Kart physics properly. Comple
 
 __1/7/20__ TEAM:
 
-We each played a round of Mario Kart to get a feel of the game and discussed how we could implement basic features.
+Each played a round of Mario Kart to get a feel of the game and discussed how we could implement basic features.
 
 
 __1/6/20__ Emma:
