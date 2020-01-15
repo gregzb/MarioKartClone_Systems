@@ -42,3 +42,7 @@ We will be using SDL to display graphics using basic sprites to represent each k
 ## Required Libraries
 * SDL 2.0
   * `sudo apt-get install libsdl2-dev`
+* SDL 2.0 TTF
+  * `sudo apt-get install libsdl2-ttf-dev`
+* pkg-config
+  * `sudo apt-get install pkg-config`
