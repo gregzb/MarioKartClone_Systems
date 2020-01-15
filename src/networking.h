@@ -14,8 +14,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+//for SDL_Point ONLY
+#include <SDL2/SDL.h>
+
 #define PORT "40934"
 #define MAX_CLIENTS 4
+
+//num inputs desired + 1 for '\0'
 #define MAX_INPUTS 5
 
 enum client_packet_type
@@ -34,7 +39,7 @@ struct current_inputs
 {
     //TODO: sunan-- figure out what server needs
     int id;  
-    char inputs[MAX_INPUTS];
+    SDL_Point wasd;
 };
 
 //a tagged union representing all possible client messages

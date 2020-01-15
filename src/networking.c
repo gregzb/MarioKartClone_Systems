@@ -119,5 +119,7 @@ int connect_to_server(char *ip)
         return -1;
     }
 
+    error_check(fcntl(sd, F_SETFL, fcntl(sd, F_GETFL, 0) | O_NONBLOCK), "set client to server socket to nonblock");
+
     return sd;
 }
