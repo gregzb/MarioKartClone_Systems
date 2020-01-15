@@ -272,7 +272,7 @@ void render_menu(double dt) {
 	SDL_QueryTexture( text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h );
 	double asp_ratio = text_bounds.h / (double)text_bounds.w;
 
-	printf("%lf\n", asp_ratio);
+	//printf("%lf\n", asp_ratio);
 
 	SDL_Rect text_rect = single_rect;
 	text_rect.x += 10;
