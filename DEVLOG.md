@@ -9,7 +9,6 @@ __1/[date]/20__ [NAME]:
 [WHAT DID YOU DO?]
 
 
-
 __1/15/20__ Darius:
 
 Integrated networking into game logic, added base state management. Removed debugging, fixed connect to server.
