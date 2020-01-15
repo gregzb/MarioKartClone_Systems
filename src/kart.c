@@ -47,7 +47,7 @@ void kart_move(struct kart *current_kart, char acc, char lr, double dt)
 { // lr should be -1 for left, 1 for right, 0 for neither
   //printf("%lf %lf\n", v2_mag(current_kart->velocity), dt);
   current_kart->velocity = v2_mult(current_kart->velocity, 1 - DRAG);
-  if (v2_mag(current_kart->velocity) > dt * 20)
+  if (v2_mag(current_kart->velocity) > dt * 20 || 1)
   {
     kart_update_direction(current_kart, lr, dt);
   }

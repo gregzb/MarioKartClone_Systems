@@ -13,8 +13,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 #$(pkg-config --cflags --libs sdl2)
 #-Wall
-LDFLAGS ?= -lm $(shell pkg-config --libs --cflags sdl2) -std=gnu11
-CFLAGS = -Wall $(shell pkg-config --libs --cflags sdl2)
+LDFLAGS ?= -lm $(shell pkg-config --libs --cflags sdl2) $(shell pkg-config --libs --cflags SDL2_ttf) -std=gnu11
+CFLAGS = -Wall
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)

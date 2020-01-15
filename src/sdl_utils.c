@@ -14,3 +14,11 @@ SDL_Texture* load_image(SDL_Renderer* renderer, char* file_name)
 
   return texture;
 }
+
+SDL_Texture* surface_to_texture(SDL_Renderer* renderer, SDL_Surface* surf )
+{
+	SDL_Texture* text;
+	text = SDL_CreateTextureFromSurface( renderer, surf );
+	SDL_FreeSurface( surf );
+	return text;
+}

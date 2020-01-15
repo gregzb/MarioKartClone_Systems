@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -22,30 +23,34 @@
 char init_sdl();
 char init_window();
 char init_renderer();
+char init_text();
 
 void game_loop();
-void render();
+void render_menu(double dt);
+void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
-enum game_state process_choice_input(SDL_Keysym keysym);
 
-SDL_Texture *load_image();
-
-SDL_Point window_size = {640, 480};
+SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
-struct kart main_kart;
+SDL_Point mouse_pos = {0, 0};
+struct kart karts[4];
+int num_karts = 1;
 char running = 1;
 
-SDL_Window *window;
-SDL_Renderer *renderer;
+SDL_Window *window = NULL;
+SDL_Renderer *renderer = NULL;
 
 struct timespec init_time;
 struct timespec last_time;
 
 //SDL_Texture * bg_image;
 struct level test_level;
-SDL_Texture *ship_tex;
+SDL_Texture *ship_tex = NULL;
 
-int pipe_descriptors[2];
+TTF_Font *font = NULL;
+
+int server_pipe[2];
+int server_socket = -1;
 
 enum game_state
 {
@@ -58,9 +63,12 @@ enum game_state
 	MULTIPLAYER
 };
 
+enum game_state game_state;
+enum game_state next_game_state;
+
 int main(int argc, char *args[])
 {
-	error_check(pipe(pipe_descriptors), "created pipe.");
+	error_check(pipe(server_pipe), "created pipe.");
 	int pid = fork();
 
 	error_check(pid, "forking process.");
@@ -68,15 +76,18 @@ int main(int argc, char *args[])
 	//child process
 	if (pid == 0)
 	{
-		server_main(pipe_descriptors[0]);
+		server_main(server_pipe[0]);
 		return 0;
 	}
 
-	if (!(init_sdl() && init_window() && init_renderer()))
+	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 		return -1;
 
-	//TEST CODE FOR MULTIPLAYER
-	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
+	// //TEST CODE FOR MULTIPLAYER
+	// printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
+
+	game_state = MENU;
+	next_game_state = game_state;
 
 	//bg_image = load_image("resources/images/test4.bmp");
 	test_level = level_init(renderer, "resources/levels/testlevel.lvl");
@@ -85,18 +96,22 @@ int main(int argc, char *args[])
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
-	main_kart = kart_init();
-	main_kart.position = (vec2){window_size.x / 2, window_size.y / 2};
+	karts[0] = kart_init();
+	karts[0].position = (vec2){window_size.x / 2, window_size.y / 2};
+
+	karts[1] = kart_init();
+	karts[1].position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
+
+	printf("%lf, %lf\n", karts[1].position.x, karts[1].position.y);
+
+	num_karts = 2;
 
 	game_loop();
 }
 
 void game_loop()
 {
-	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
-
-	enum game_state game_state = MENU;
-	int server_socket = -1;
+	//printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
 
 	while (running)
 	{
@@ -111,6 +126,8 @@ void game_loop()
 		snprintf(fps_title, 256, "Mario Kart Clone | %.2lf FPS", 1 / dt);
 		SDL_SetWindowTitle(window, fps_title);
 
+		SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
+
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
@@ -120,13 +137,12 @@ void game_loop()
 			}
 			else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
 			{
-				if (!game_state)
-				{
-					game_state = process_choice_input(event.key.keysym);
-				}
-				else
-					process_input(event.type, event.key.keysym);
+				process_input(event.type, event.key.keysym);
 			}
+		}
+
+		if (game_state == MENU) {
+			render_menu(dt);
 		}
 
 		if (game_state == CONNECTING)
@@ -179,16 +195,14 @@ void game_loop()
 			write(server_socket, &keep_alive, sizeof keep_alive);
 		}
 
-		if (game_state == SINGLE_PLAYER || game_state == MULTIPLAYER)
+		if (game_state == SINGLE_PLAYER)
 		{
-			kart_move(&main_kart, wasd.y, wasd.x, dt);
+			kart_move(&karts[0], wasd.y, wasd.x, dt);
 
-			// player_pos.x += wasd.x * 200 * dt;
-			// player_pos.y += wasd.y * 200 * dt;
-
-			render(dt);
+			render_game(dt);
 		}
 
+		game_state = next_game_state;
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
 }
@@ -214,29 +228,64 @@ void process_input(int type, SDL_Keysym keysym)
 	}
 }
 
-enum game_state process_choice_input(SDL_Keysym keysym)
-{
-	bool msg = true;
+// enum game_state process_choice_input(SDL_Keysym keysym)
+// {
+// 	bool msg = true;
+//
+// 	switch (keysym.sym)
+// 	{
+// 	case SDLK_o:
+// 		printf("Selected single player mode.\n");
+// 		return SINGLE_PLAYER;
+// 	case SDLK_m:
+// 		printf("Selected connection mode mode.\n");
+// 		return CONNECTING;
+// 	case SDLK_h:
+// 		write(server_pipe[1], &msg, sizeof msg);
+//
+// 		return CONNECTING;
+// 		printf("Selected hosting mode.\n");
+// 	default:
+// 		return MENU;
+// 	}
+// }
 
-	switch (keysym.sym)
-	{
-	case SDLK_o:
-		printf("Selected single player mode.\n");
-		return SINGLE_PLAYER;
-	case SDLK_m:
-		printf("Selected connection mode mode.\n");
-		return CONNECTING;
-	case SDLK_h:
-		write(pipe_descriptors[1], &msg, sizeof msg);
+void render_menu(double dt) {
+	SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
+	SDL_RenderClear(renderer);
 
-		return CONNECTING;
-		printf("Selected hosting mode.\n");
-	default:
-		return MENU;
-	}
+	SDL_SetRenderDrawColor(renderer, 90, 50, 150, 255);
+
+	SDL_Rect single_rect = {window_size.x/2, window_size.y/2, 600, 125};
+	single_rect.x -= single_rect.w/2;
+	single_rect.y -= single_rect.h/2;
+
+	SDL_RenderFillRect(renderer, &single_rect);
+
+	SDL_Surface* solid = TTF_RenderText_Solid( font, "Singleplayer", (SDL_Color) {255, 255, 255, 255} );
+	SDL_Texture *text_texture = surface_to_texture( renderer, solid );
+
+	SDL_Rect text_bounds = {0, 0, 0, 0};
+
+	SDL_QueryTexture( text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h );
+	double asp_ratio = text_bounds.h / (double)text_bounds.w;
+
+	printf("%lf\n", asp_ratio);
+
+	SDL_Rect text_rect = single_rect;
+	text_rect.x += 10;
+	text_rect.y += 10;
+	//text_rect.w -= 20;
+	//text_rect.h = (int) (text_rect.w * asp_ratio);
+	text_rect.h -= 20;
+	text_rect.w = (int) (text_rect.h * (1 / asp_ratio));
+
+	SDL_RenderCopy( renderer, text_texture, NULL, &text_rect );
+
+	SDL_RenderPresent(renderer);
 }
 
-void render(double dt)
+void render_game(double dt)
 {
 	double run_time = get_delta_time(init_time);
 
@@ -246,24 +295,53 @@ void render(double dt)
 	SDL_Rect dst;
 	dst.w = window_size.x * 2;
 	dst.h = window_size.y * 2;
-	dst.x = -main_kart.position.x * 2 + dst.w / 4;
-	dst.y = -main_kart.position.y * 2 + dst.h / 4;
+	dst.x = -karts[0].position.x * 2 + dst.w / 4;
+	dst.y = -karts[0].position.y * 2 + dst.h / 4;
 
 	SDL_Point rot_point;
-	rot_point.x = main_kart.position.x * 2;
-	rot_point.y = main_kart.position.y * 2;
+	rot_point.x = karts[0].position.x * 2;
+	rot_point.y = karts[0].position.y * 2;
 
-	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -v2_angle(main_kart.direction) * 180 / (M_PI)-90, &rot_point, 0);
+	double rot_angle = v2_angle(karts[0].direction);
+
+	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle* 180 / (M_PI))-90, &rot_point, 0);
 
 	SDL_Rect center;
-	center.x = window_size.x / 2 - 25 / 2;
-	center.y = window_size.y / 2 - 25 / 2;
 	center.w = 25;
 	center.h = 25;
+	center.x = window_size.x / 2 - center.w / 2;
+	center.y = window_size.y / 2 - center.h / 2;
 
 	SDL_RenderCopyEx(renderer, ship_tex, NULL, &center, -90, NULL, 0);
 
+	for (int i = 1; i < num_karts; i++) {
+		vec2 subbed = v2_sub(karts[i].position, karts[0].position);
+		vec2 mult = v2_mult(subbed, 2);
+		vec2 rotted = v2_rotate(mult, -rot_angle-M_PI/2);
+		vec2 added = v2_add(rotted, (vec2) {center.x + center.w / 2, center.y + center.w / 2});
+
+		SDL_Rect kart_render_pos;
+		kart_render_pos.w = 25;
+		kart_render_pos.h = 25;
+		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
+		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
+		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle* 180 / M_PI) + 180, NULL, 0);
+	}
+
 	SDL_RenderPresent(renderer);
+}
+
+char init_text() {
+	if (TTF_Init() == -1) {
+		printf("Failed to initialize TTF: %s\n", SDL_GetError());
+		return 0;
+	}
+	font = TTF_OpenFont("resources/fonts/Roboto-Black.ttf", 120 );
+	if (font == NULL) {
+		printf("Failed to load font: %s\n", SDL_GetError());
+		return 0;
+	}
+	return 1;
 }
 
 char init_sdl()
