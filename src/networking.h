@@ -16,6 +16,7 @@
 
 #define PORT "40934"
 #define MAX_CLIENTS 4
+#define MAX_INPUTS 5
 
 enum client_packet_type
 {
@@ -31,7 +32,9 @@ struct keep_alive {};
 //used for client to send its msgs during game
 struct current_inputs
 {
-    //TODO: sunan-- figure out what server needs 
+    //TODO: sunan-- figure out what server needs
+    int id;  
+    char inputs[MAX_INPUTS];
 };
 
 //a tagged union representing all possible client messages
