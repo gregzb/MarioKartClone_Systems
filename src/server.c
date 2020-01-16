@@ -139,8 +139,6 @@ void server_main(int read_pipe)
                     break;
                 }
 
-                printf("Received message type %d\n", (int)packet.type);
-
                 //handle messages
                 switch (packet.type)
                 {

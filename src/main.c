@@ -217,7 +217,6 @@ void game_loop()
 					break;
 				case CLIENT_POSITIONS:
 				{
-					printf("Received client_positions.\n");
 					struct client ours = {0};
 					for (int i = 0; i < serv_msg.data.client_positions.num_clients; i++)
 					{
