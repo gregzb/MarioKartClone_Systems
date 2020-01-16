@@ -30,14 +30,16 @@ void game_loop();
 void render_menu(double dt);
 void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
+enum game_state process_choice_input(SDL_Keysym keysym);
 
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
 SDL_Point mouse_pos = {0, 0};
 char mouse_clicked = 0;
 char mouse_prev_down = 0;
-struct kart karts[4];
-int num_karts = 1;
+
+struct client clients[MAX_CLIENTS] = {0};
+int num_clients = 1;
 char running = 1;
 
 SDL_Window *window = NULL;
@@ -98,9 +100,6 @@ int main(int argc, char *args[])
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 		return -1;
 
-	// //TEST CODE FOR MULTIPLAYER
-	// printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
-
 	game_state = MENU;
 	next_game_state = game_state;
 
@@ -114,13 +113,15 @@ int main(int argc, char *args[])
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
-	karts[0] = kart_init();
-	karts[0].position = (vec2){window_size.x / 2, window_size.y / 2};
+	clients[0].kart = kart_init();
+	clients[0].kart.position = (vec2){window_size.x / 2, window_size.y / 2};
 
-	karts[1] = kart_init();
-	karts[1].position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
+	clients[1].kart = kart_init();
+	clients[1].kart.position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
 
-	num_karts = 2;
+	printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
+
+	num_clients = 2;
 
 	game_loop();
 }
@@ -146,6 +147,8 @@ void game_loop()
 
 		mouse_clicked = (bitmask & SDL_BUTTON(1) && !mouse_prev_down);
 		mouse_prev_down = bitmask & SDL_BUTTON(1) ? 1 : 0;
+
+		//printf("%d\n", mouse_clicked);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -216,7 +219,7 @@ void game_loop()
 						//TODO: handle gracefully
 						next_multi_state = WAITING;
 						next_game_state = MENU;
-						exit(1);
+						//exit(1);
 					}
 					break;
 				}
@@ -227,8 +230,51 @@ void game_loop()
 					seconds_until_game = serv_msg.data.wait_status.seconds_left;
 					//printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
 					break;
+				case CONNECTION_REQUEST_RESPONSE:
+					if (serv_msg.data.connection_request_response.accepted)
+					{
+						clients[0].id = serv_msg.data.connection_request_response.id;
+						printf("Client id: %d\n", clients[0].id);
+					}
+					else
+					{
+						//todo: gracefully handle, maybe by printing msg and returning to menu
+						printf("Connection request was not accepted.\n");
+						next_multi_state = WAITING;
+						next_game_state = MENU;
+						//exit(1);
+					}
+					break;
+				case START_RACE:
+					next_multi_state = PLAYING;
+					printf("Start race received.\n");
+					break;
+				case CLIENT_POSITIONS:
+				{
+					struct client ours = {0};
+					for (int i = 0; i < serv_msg.data.client_positions.num_clients; i++)
+					{
+						if (serv_msg.data.client_positions.clients[i].id == clients[0].id)
+						{
+							ours = serv_msg.data.client_positions.clients[i];
+							serv_msg.data.client_positions.clients[i] = serv_msg.data.client_positions.clients[0];
+							serv_msg.data.client_positions.clients[0] = ours;
+
+							//printf("Our client data: x: %lf, y: %lf\n", ours.kart.position.x, ours.kart.position.y);
+
+							break;
+						}
+
+						num_clients = serv_msg.data.client_positions.num_clients;
+					}
+
+					memcpy(clients, serv_msg.data.client_positions.clients, sizeof clients);
+				}
+				break;
 				}
 			}
+
+			struct client_packet packet = {0};
 
 			if (multi_state == WAITING)
 			{
@@ -238,23 +284,27 @@ void game_loop()
 				char temp[128];
 				snprintf(temp, sizeof temp, "Game starts in %d seconds.", seconds_until_game);
 
-				render_text(renderer, font, (SDL_Point){window_size.x/2, window_size.y/2}, 50, temp, (SDL_Color){50, 90, 160, 255});
+				render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 50, temp, (SDL_Color){50, 90, 160, 255});
 				SDL_RenderPresent(renderer);
+
+				packet.type = KEEP_ALIVE;
 			}
 			else if (multi_state == PLAYING)
 			{
-			}
+				packet.type = CURRENT_INPUTS;
 
-			//TODO: send data based on current state
-			//This is correct for wait mode
-			struct client_packet keep_alive = {.type = KEEP_ALIVE};
-			write(server_socket, &keep_alive, sizeof keep_alive);
+				struct current_inputs inputs = {.wasd = wasd, .id = clients[0].id};
+				packet.data.current_inputs = inputs;
+
+				kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
+				render_game(dt);
+			}
+			write(server_socket, &packet, sizeof packet);
 		}
 
 		if (game_state == SINGLE_PLAYER)
 		{
-			kart_move(&karts[0], wasd.y, wasd.x, dt);
-
+			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
 			render_game(dt);
 		}
 
@@ -371,14 +421,14 @@ void render_game(double dt)
 	SDL_Rect dst;
 	dst.w = window_size.x * 2;
 	dst.h = window_size.y * 2;
-	dst.x = -karts[0].position.x * 2 + dst.w / 4;
-	dst.y = -karts[0].position.y * 2 + dst.h / 4;
+	dst.x = -clients[0].kart.position.x * 2 + dst.w / 4;
+	dst.y = -clients[0].kart.position.y * 2 + dst.h / 4;
 
 	SDL_Point rot_point;
-	rot_point.x = karts[0].position.x * 2;
-	rot_point.y = karts[0].position.y * 2;
+	rot_point.x = clients[0].kart.position.x * 2;
+	rot_point.y = clients[0].kart.position.y * 2;
 
-	double rot_angle = v2_angle(karts[0].direction);
+	double rot_angle = v2_angle(clients[0].kart.direction);
 
 	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
 
@@ -390,9 +440,9 @@ void render_game(double dt)
 
 	SDL_RenderCopyEx(renderer, ship_tex, NULL, &center, -90, NULL, 0);
 
-	for (int i = 1; i < num_karts; i++)
+	for (int i = 1; i < num_clients; i++)
 	{
-		vec2 subbed = v2_sub(karts[i].position, karts[0].position);
+		vec2 subbed = v2_sub(clients[i].kart.position, clients[0].kart.position);
 		vec2 mult = v2_mult(subbed, 2);
 		vec2 rotted = v2_rotate(mult, -rot_angle - M_PI / 2);
 		vec2 added = v2_add(rotted, (vec2){center.x + center.w / 2, center.y + center.w / 2});

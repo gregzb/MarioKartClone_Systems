@@ -13,12 +13,11 @@
 
 #define CONNECT_COUNTDOWN 30
 
-struct client
+struct client_connection
 {
     int socket_descriptor;
     struct timespec last_received;
-    int id;
-    struct kart cart;
+    struct client client;
     SDL_Point wasd;
     //TODO: sunan-- add fields for client
     //kart (use kart stuff: has positions, acceleration, etc)
@@ -29,11 +28,12 @@ struct client
 enum game_state
 {
     WAITING_FOR_CLIENTS,
+    BEGINNING_RACE,
     IN_RACE
 };
 
 //removes clients[index] from clients, shifting
-void remove_client(struct client *clients, size_t *length, size_t index);
+void remove_client(struct client_connection *clients, size_t *length, size_t index);
 
 //gets dt time depending on game state
 double min_loop_time(enum game_state);
@@ -53,17 +53,18 @@ void server_main(int read_pipe)
 
     int socket = server_setup();
 
-    struct client clients[MAX_CLIENTS];
+    struct client_connection clients[MAX_CLIENTS];
     size_t num_clients = 0;
 
     //id which will be given to next connecting client
-    int next_id = 0;
+    int next_id = 1;
 
     //time at which countdown begins
     struct timespec countdown_start;
     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
 
     enum game_state game_state = WAITING_FOR_CLIENTS;
+    enum game_state next_game_state = game_state;
 
     struct timespec current_time;
     clock_gettime(CLOCK_MONOTONIC, &current_time);
@@ -77,9 +78,10 @@ void server_main(int read_pipe)
             continue;
         }
 
-        if (num_clients < MIN_CLIENTS) {
-            clock_gettime(CLOCK_MONOTONIC, &countdown_start);
-        }
+        // UNCOMMENT
+        // if (num_clients < MIN_CLIENTS) {
+        //     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
+        // }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
 
@@ -101,11 +103,11 @@ void server_main(int read_pipe)
 
             if (response.accepted)
             {
-                struct client new_client =
+                struct client client = {.kart = kart_init(), .id = next_id++};
+                struct client_connection new_client =
                     {.socket_descriptor = new_connection,
                      .last_received = current_time,
-                     .id = next_id++,
-                     .cart = kart_init(),
+                     .client = client,
                      .wasd = {0}};
                 clients[num_clients++] = new_client;
                 printf("(testing server) new client connected; %zd clients\n", num_clients);
@@ -148,15 +150,17 @@ void server_main(int read_pipe)
                 case CONNECTION_REQUEST:
                     //todo
                     break;
-                    case KEEP_ALIVE:
+                case KEEP_ALIVE:
                     //dummy, does nothing
                     break;
                 case CURRENT_INPUTS:
                     for (int i = 0; i < num_clients; i++)
                     {
-                        if (clients[i].id == packet.data.current_inputs.id)
+                        if (clients[i].client.id == packet.data.current_inputs.id)
                         {
                             clients[i].wasd = packet.data.current_inputs.wasd;
+                            kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
+
                             break;
                         }
                     }
@@ -176,18 +180,20 @@ void server_main(int read_pipe)
             }
         }
 
-        //start game if all possible client connected
-        if (num_clients == MAX_CLIENTS)
+        if (game_state == WAITING_FOR_CLIENTS)
         {
-            game_state = IN_RACE;
-            continue;
-        }
+            //start game if all possible client connected
+            if (num_clients == MAX_CLIENTS)
+            {
+                next_game_state = BEGINNING_RACE;
+            }
 
-        //if the countdown has elapsed and there are at least two players start
-        else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients >= MIN_CLIENTS)
-        {
-            game_state = IN_RACE;
-            continue;
+            //if the countdown has elapsed and there are at least two players start
+            //else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients >= MIN_CLIENTS)
+            else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 0)
+            {
+                next_game_state = BEGINNING_RACE;
+            }
         }
 
         struct server_packet packet = {0};
@@ -200,29 +206,44 @@ void server_main(int read_pipe)
             //fill client_ids
             for (int i = 0; i < num_clients; i++)
             {
-                wait_status.client_ids[i] = clients[i].id;
+                wait_status.client_ids[i] = clients[i].client.id;
             }
             packet.data.wait_status = wait_status;
         }
+        else if (game_state == BEGINNING_RACE)
+        {
+            packet.type = START_RACE;
+            next_game_state = IN_RACE;
+        }
         else if (game_state == IN_RACE)
         {
+            packet.type = CLIENT_POSITIONS;
+
+            // for (int i = 0; i < num_clients; i++)
+            // {
+            //     kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
+            // }
+
             for (int i = 0; i < num_clients; i++)
             {
-                kart_move(&clients[i].cart, clients[i].wasd.y, clients[i].wasd.x, dt);
+                packet.data.client_positions.clients[i] = clients[i].client;
             }
-
-            //TODO: then initialize packet with all data
+            packet.data.client_positions.num_clients = num_clients;
         }
 
-        //send wait status to all clients
+        //printf("Sending message type %d\n", (int)packet.type);
+
+        //send packet to all clients
         for (int i = 0; i < num_clients; i++)
         {
             write(clients[i].socket_descriptor, &packet, sizeof packet);
         }
+
+        game_state = next_game_state;
     }
 }
 
-void remove_client(struct client *clients, size_t *length, size_t index)
+void remove_client(struct client_connection *clients, size_t *length, size_t index)
 {
     close(clients[index].socket_descriptor);
 
@@ -241,6 +262,6 @@ double min_loop_time(enum game_state state)
     case WAITING_FOR_CLIENTS:
         return 1.0;
     default:
-        return 1.0 / 30.0;
+        return 1.0 / 60.0;
     }
 }
