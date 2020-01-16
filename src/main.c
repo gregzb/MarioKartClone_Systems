@@ -29,14 +29,16 @@ void game_loop();
 void render_menu(double dt);
 void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
+enum game_state process_choice_input(SDL_Keysym keysym);
 
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
 SDL_Point mouse_pos = {0, 0};
-char* mouse_clicked = 0;
-char* mouse_prev_down = 0;
-struct kart karts[4];
-int num_karts = 1;
+char *mouse_clicked = 0;
+char *mouse_prev_down = 0;
+
+struct client clients[MAX_CLIENTS] = {0};
+int num_clients = 1;
 char running = 1;
 
 SDL_Window *window = NULL;
@@ -85,9 +87,6 @@ int main(int argc, char *args[])
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 		return -1;
 
-	// //TEST CODE FOR MULTIPLAYER
-	// printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
-
 	game_state = MENU;
 	next_game_state = game_state;
 
@@ -98,22 +97,22 @@ int main(int argc, char *args[])
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
-	karts[0] = kart_init();
-	karts[0].position = (vec2){window_size.x / 2, window_size.y / 2};
+	clients[0].kart = kart_init();
+	clients[0].kart.position = (vec2){window_size.x / 2, window_size.y / 2};
 
-	karts[1] = kart_init();
-	karts[1].position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
+	clients[1].kart = kart_init();
+	clients[1].kart.position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
 
-	printf("%lf, %lf\n", karts[1].position.x, karts[1].position.y);
+	printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
 
-	num_karts = 2;
+	num_clients = 2;
 
 	game_loop();
 }
 
 void game_loop()
 {
-	//printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
+	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
 
 	while (running)
 	{
@@ -133,7 +132,7 @@ void game_loop()
 		mouse_clicked = (bitmask & SDL_BUTTON(1) && !mouse_prev_down);
 		mouse_prev_down = bitmask & SDL_BUTTON(1) ? 1 : 0;
 
-		printf("%d\n", mouse_clicked);
+		//printf("%d\n", mouse_clicked);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -144,11 +143,17 @@ void game_loop()
 			}
 			else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
 			{
-				process_input(event.type, event.key.keysym);
+				if (game_state == MENU)
+				{
+					next_game_state = process_choice_input(event.key.keysym);
+				}
+				else
+					process_input(event.type, event.key.keysym);
 			}
 		}
 
-		if (game_state == MENU) {
+		if (game_state == MENU)
+		{
 			render_menu(dt);
 		}
 
@@ -157,12 +162,11 @@ void game_loop()
 			server_socket = connect_to_server("127.0.0.1");
 			if (server_socket != -1)
 			{
-				game_state = MULTIPLAYER;
+				next_game_state = WAIT_PERIOD;
 			}
-			continue;
 		}
 
-		if (game_state == MULTIPLAYER)
+		if (game_state == WAIT_PERIOD || game_state == MULTIPLAYER)
 		{
 			struct server_packet serv_msg;
 
@@ -194,19 +198,69 @@ void game_loop()
 				case WAIT_STATUS:
 					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
 					break;
-				}
+				case CONNECTION_REQUEST_RESPONSE:
+					if (serv_msg.data.connection_request_response.accepted)
+					{
+						clients[0].id = serv_msg.data.connection_request_response.id;
+						printf("Client id: %d\n", clients[0].id);
+					}
+					else
+					{
+						//todo: gracefully handle, maybe by printing msg and returning to menu
+						printf("Connection request was not accepted.\n");
+						exit(1);
+					}
+					break;
+				case START_RACE:
+					next_game_state = MULTIPLAYER;
+					printf("Start race received.\n");
+					break;
+				case CLIENT_POSITIONS:
+				{
+					printf("Received client_positions.\n");
+					struct client ours = {0};
+					for (int i = 0; i < serv_msg.data.client_positions.num_clients; i++)
+					{
+						if (serv_msg.data.client_positions.clients[i].id == clients[0].id)
+						{
+							ours = serv_msg.data.client_positions.clients[i];
+							serv_msg.data.client_positions.clients[i] = serv_msg.data.client_positions.clients[0];
+							serv_msg.data.client_positions.clients[0] = ours;
 
+							//printf("Our client data: x: %lf, y: %lf\n", ours.kart.position.x, ours.kart.position.y);
+
+							break;
+						}
+
+						num_clients = serv_msg.data.client_positions.num_clients;
+					}
+
+					memcpy(clients, serv_msg.data.client_positions.clients, sizeof clients);
+				}
+				break;
+				}
 			}
 
-			//TODO: send data based on current state
-			//This is correct for wait mode
-			struct client_packet keep_alive = {.type = KEEP_ALIVE};
-			write(server_socket, &keep_alive, sizeof keep_alive);
+			struct client_packet packet = {0};
+
+			if (game_state == WAIT_PERIOD)
+			{
+				packet.type = KEEP_ALIVE;
+			}
+			else if (game_state == MULTIPLAYER)
+			{
+				packet.type = CURRENT_INPUTS;
+
+				struct current_inputs inputs = {.wasd = wasd, .id = clients[0].id};
+				packet.data.current_inputs = inputs;
+			}
+
+			write(server_socket, &packet, sizeof packet);
 		}
 
-		if (game_state == SINGLE_PLAYER)
+		if (game_state == SINGLE_PLAYER || game_state == MULTIPLAYER)
 		{
-			kart_move(&karts[0], wasd.y, wasd.x, dt);
+			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
 
 			render_game(dt);
 		}
@@ -237,46 +291,47 @@ void process_input(int type, SDL_Keysym keysym)
 	}
 }
 
-// enum game_state process_choice_input(SDL_Keysym keysym)
-// {
-// 	bool msg = true;
-//
-// 	switch (keysym.sym)
-// 	{
-// 	case SDLK_o:
-// 		printf("Selected single player mode.\n");
-// 		return SINGLE_PLAYER;
-// 	case SDLK_m:
-// 		printf("Selected connection mode mode.\n");
-// 		return CONNECTING;
-// 	case SDLK_h:
-// 		write(server_pipe[1], &msg, sizeof msg);
-//
-// 		return CONNECTING;
-// 		printf("Selected hosting mode.\n");
-// 	default:
-// 		return MENU;
-// 	}
-// }
+enum game_state process_choice_input(SDL_Keysym keysym)
+{
+	bool msg = true;
 
-void render_menu(double dt) {
+	switch (keysym.sym)
+	{
+	case SDLK_o:
+		printf("Selected single player mode.\n");
+		return SINGLE_PLAYER;
+	case SDLK_m:
+		printf("Selected connection mode mode.\n");
+		return CONNECTING;
+	case SDLK_h:
+		write(server_pipe[1], &msg, sizeof msg);
+
+		return CONNECTING;
+		printf("Selected hosting mode.\n");
+	default:
+		return MENU;
+	}
+}
+
+void render_menu(double dt)
+{
 	SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
 	SDL_RenderClear(renderer);
 
 	SDL_SetRenderDrawColor(renderer, 90, 50, 150, 255);
 
-	SDL_Rect single_rect = {window_size.x/2, window_size.y/2, 600, 125};
-	single_rect.x -= single_rect.w/2;
-	single_rect.y -= single_rect.h/2;
+	SDL_Rect single_rect = {window_size.x / 2, window_size.y / 2, 600, 125};
+	single_rect.x -= single_rect.w / 2;
+	single_rect.y -= single_rect.h / 2;
 
 	SDL_RenderFillRect(renderer, &single_rect);
 
-	SDL_Surface* solid = TTF_RenderText_Solid( font, "Singleplayer", (SDL_Color) {255, 255, 255, 255} );
-	SDL_Texture *text_texture = surface_to_texture( renderer, solid );
+	SDL_Surface *solid = TTF_RenderText_Solid(font, "Singleplayer", (SDL_Color){255, 255, 255, 255});
+	SDL_Texture *text_texture = surface_to_texture(renderer, solid);
 
 	SDL_Rect text_bounds = {0, 0, 0, 0};
 
-	SDL_QueryTexture( text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h );
+	SDL_QueryTexture(text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h);
 	double asp_ratio = text_bounds.h / (double)text_bounds.w;
 
 	//printf("%lf\n", asp_ratio);
@@ -287,9 +342,9 @@ void render_menu(double dt) {
 	//text_rect.w -= 20;
 	//text_rect.h = (int) (text_rect.w * asp_ratio);
 	text_rect.h -= 20;
-	text_rect.w = (int) (text_rect.h * (1 / asp_ratio));
+	text_rect.w = (int)(text_rect.h * (1 / asp_ratio));
 
-	SDL_RenderCopy( renderer, text_texture, NULL, &text_rect );
+	SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
 
 	SDL_RenderPresent(renderer);
 }
@@ -304,16 +359,16 @@ void render_game(double dt)
 	SDL_Rect dst;
 	dst.w = window_size.x * 2;
 	dst.h = window_size.y * 2;
-	dst.x = -karts[0].position.x * 2 + dst.w / 4;
-	dst.y = -karts[0].position.y * 2 + dst.h / 4;
+	dst.x = -clients[0].kart.position.x * 2 + dst.w / 4;
+	dst.y = -clients[0].kart.position.y * 2 + dst.h / 4;
 
 	SDL_Point rot_point;
-	rot_point.x = karts[0].position.x * 2;
-	rot_point.y = karts[0].position.y * 2;
+	rot_point.x = clients[0].kart.position.x * 2;
+	rot_point.y = clients[0].kart.position.y * 2;
 
-	double rot_angle = v2_angle(karts[0].direction);
+	double rot_angle = v2_angle(clients[0].kart.direction);
 
-	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle* 180 / (M_PI))-90, &rot_point, 0);
+	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
 
 	SDL_Rect center;
 	center.w = 25;
@@ -323,30 +378,34 @@ void render_game(double dt)
 
 	SDL_RenderCopyEx(renderer, ship_tex, NULL, &center, -90, NULL, 0);
 
-	for (int i = 1; i < num_karts; i++) {
-		vec2 subbed = v2_sub(karts[i].position, karts[0].position);
+	for (int i = 1; i < num_clients; i++)
+	{
+		vec2 subbed = v2_sub(clients[i].kart.position, clients[0].kart.position);
 		vec2 mult = v2_mult(subbed, 2);
-		vec2 rotted = v2_rotate(mult, -rot_angle-M_PI/2);
-		vec2 added = v2_add(rotted, (vec2) {center.x + center.w / 2, center.y + center.w / 2});
+		vec2 rotted = v2_rotate(mult, -rot_angle - M_PI / 2);
+		vec2 added = v2_add(rotted, (vec2){center.x + center.w / 2, center.y + center.w / 2});
 
 		SDL_Rect kart_render_pos;
 		kart_render_pos.w = 25;
 		kart_render_pos.h = 25;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
-		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle* 180 / M_PI) + 180, NULL, 0);
+		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180, NULL, 0);
 	}
 
 	SDL_RenderPresent(renderer);
 }
 
-char init_text() {
-	if (TTF_Init() == -1) {
+char init_text()
+{
+	if (TTF_Init() == -1)
+	{
 		printf("Failed to initialize TTF: %s\n", SDL_GetError());
 		return 0;
 	}
-	font = TTF_OpenFont("resources/fonts/Roboto-Black.ttf", 120 );
-	if (font == NULL) {
+	font = TTF_OpenFont("resources/fonts/Roboto-Black.ttf", 120);
+	if (font == NULL)
+	{
 		printf("Failed to load font: %s\n", SDL_GetError());
 		return 0;
 	}
