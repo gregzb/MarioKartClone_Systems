@@ -80,6 +80,12 @@ void kart_update_velocity(struct kart *current_kart)
   }
 }
 
-void kart_reverse_direction(struct kart * current_kart){
+void kart_reverse_direction(struct kart * current_kart)
+{
   current_kart -> direction = v2_rotate(current_kart -> direction, 3.14);
+}
+
+void kart_reverse_velocity(struct kart *current_kart)
+{
+  current_kart -> velocity = v2_mult(current_kart -> direction, -1);
 }
