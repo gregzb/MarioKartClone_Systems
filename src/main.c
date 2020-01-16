@@ -64,12 +64,22 @@ enum game_state
 	//single player only
 	PAUSED,
 	CONNECTING,
-	WAIT_PERIOD,
 	MULTIPLAYER
+};
+
+enum multiplayer_state
+{
+	WAITING = 0,
+	PLAYING
 };
 
 enum game_state game_state;
 enum game_state next_game_state;
+
+enum multiplayer_state multi_state;
+enum multiplayer_state next_multi_state;
+
+int seconds_until_game = 30;
 
 int main(int argc, char *args[])
 {
@@ -93,6 +103,9 @@ int main(int argc, char *args[])
 
 	game_state = MENU;
 	next_game_state = game_state;
+
+	multi_state = WAITING;
+	next_multi_state = WAITING;
 
 	//bg_image = load_image("resources/images/test4.bmp");
 	test_level = level_init(renderer, "resources/levels/testlevel.lvl");
@@ -156,17 +169,14 @@ void game_loop()
 		{
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			SDL_RenderClear(renderer);
-			SDL_Surface *solid = TTF_RenderText_Solid(font, "Connecting to ", (SDL_Color){255, 255, 255, 255});
-			SDL_Texture *text_texture = surface_to_texture(renderer, solid);
 
-			SDL_Rect text_bounds = {window_size.x/2, window_size.y/2, 0, 0};
+			char temp[128];
+			snprintf(temp, sizeof temp, "Connecting to %s", server_ip);
 
-			SDL_QueryTexture(text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h);
-			text_bounds.x -= text_bounds.w/2;
-			text_bounds.y -= text_bounds.h/2;
-
-			SDL_RenderCopy(renderer, text_texture, NULL, &text_bounds);
+			render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 60, temp, (SDL_Color){50, 90, 160, 255});
 			SDL_RenderPresent(renderer);
+
+			//SDL_Delay(2000);
 
 			printf("Trying to connect to %s\n", server_ip);
 			server_socket = connect_to_server(server_ip);
@@ -174,7 +184,9 @@ void game_loop()
 			if (server_socket != -1)
 			{
 				next_game_state = MULTIPLAYER;
-			} else {
+			}
+			else
+			{
 				next_game_state = MENU;
 			}
 		}
@@ -192,6 +204,8 @@ void game_loop()
 				{
 					//handle gracefully
 					printf("Connection to server closed unexpectedly.\n");
+					next_multi_state = WAITING;
+					next_game_state = MENU;
 					break;
 				}
 				else if (size < 0)
@@ -200,6 +214,8 @@ void game_loop()
 					{
 						printf("Error reading from server socket: %s\n", strerror(errno));
 						//TODO: handle gracefully
+						next_multi_state = WAITING;
+						next_game_state = MENU;
 						exit(1);
 					}
 					break;
@@ -208,9 +224,25 @@ void game_loop()
 				switch (serv_msg.type)
 				{
 				case WAIT_STATUS:
-					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
+					seconds_until_game = serv_msg.data.wait_status.seconds_left;
+					//printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
 					break;
 				}
+			}
+
+			if (multi_state == WAITING)
+			{
+				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+				SDL_RenderClear(renderer);
+
+				char temp[128];
+				snprintf(temp, sizeof temp, "Game starts in %d seconds.", seconds_until_game);
+
+				render_text(renderer, font, (SDL_Point){window_size.x/2, window_size.y/2}, 50, temp, (SDL_Color){50, 90, 160, 255});
+				SDL_RenderPresent(renderer);
+			}
+			else if (multi_state == PLAYING)
+			{
 			}
 
 			//TODO: send data based on current state
@@ -227,6 +259,7 @@ void game_loop()
 		}
 
 		game_state = next_game_state;
+		multi_state = next_multi_state;
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
 }
@@ -319,7 +352,8 @@ void render_menu(double dt)
 		printf("Server IP: ");
 		fflush(stdout);
 		fgets(server_ip, 16, stdin);
-		if(server_ip[14] == '\n') server_ip[14] = 0;
+		if (server_ip[14] == '\n')
+			server_ip[14] = 0;
 		next_game_state = CONNECTING;
 		SDL_Delay(500);
 	}
