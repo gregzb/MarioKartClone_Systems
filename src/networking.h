@@ -17,11 +17,19 @@
 //for SDL_Point ONLY
 #include <SDL2/SDL.h>
 
+#include "kart.h"
+
 #define PORT "40934"
 #define MAX_CLIENTS 4
 
 //num inputs desired + 1 for '\0'
 #define MAX_INPUTS 5
+
+struct client
+{
+	int id;
+	struct kart kart;
+};
 
 enum client_packet_type
 {
@@ -57,6 +65,8 @@ enum server_packet_type
 {
     CONNECTION_REQUEST_RESPONSE,
     WAIT_STATUS,
+    START_RACE,
+    CLIENT_POSITIONS
 };
 
 struct connection_response
@@ -65,7 +75,7 @@ struct connection_response
     bool accepted;
     //the following fields are only valid if accepted is true
     //an id unique to the client in the server instance.
-    uint8_t id;
+    int id;
 };
 
 //sent to clients while they are waiting for game start
@@ -76,12 +86,22 @@ struct wait_status
     size_t client_ids_length;
 };
 
+struct start_race {};
+
+struct client_positions
+{
+    struct client clients[MAX_CLIENTS];
+    int num_clients;
+};
+
 struct server_packet
 {
     enum server_packet_type type;
     union {
         struct connection_response connection_request_response;
         struct wait_status wait_status;
+        struct start_race start_race;
+        struct client_positions client_positions;
     } data;
 };
 
