@@ -18,6 +18,9 @@ __1/15/20__ Greg:
 
 Added text rendering. Added the click variable. 
 
+__1/15/20__ Sunan:
+Worked on the collision code using SDL_IntersectRect. This involved implementing change in velocity and direction when there is a collision between thr kart and terrain.
+
 
 __1/14/20__ Darius:
 
