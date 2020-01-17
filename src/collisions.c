@@ -12,7 +12,17 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <errno.h>
+
+#include "vec2.h"
+#include "time_util.h"
+#include "server.h"
 #include "collisions.h"
+#include "kart.h"
+#include "level.h"
+#include "sdl_utils.h"
+#include "networking.h"
+
+
 
 
 bool check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
@@ -21,13 +31,5 @@ bool check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_R
         kart_reverse_direction(cart);
         return true;
     }
-    return false; 
+    return false;
 }
-
-
-
-
-
-
-
-
