@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <errno.h>
+#include <string.h>
 
 #include "vec2.h"
 #include "time_util.h"
@@ -34,8 +35,8 @@ enum game_state process_choice_input(SDL_Keysym keysym);
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
 SDL_Point mouse_pos = {0, 0};
-char *mouse_clicked = 0;
-char *mouse_prev_down = 0;
+char mouse_clicked = 0;
+char mouse_prev_down = 0;
 
 struct client clients[MAX_CLIENTS] = {0};
 int num_clients = 1;
@@ -56,6 +57,8 @@ TTF_Font *font = NULL;
 int server_pipe[2];
 int server_socket = -1;
 
+char server_ip[16];
+
 enum game_state
 {
 	MENU = 0,
@@ -63,12 +66,22 @@ enum game_state
 	//single player only
 	PAUSED,
 	CONNECTING,
-	WAIT_PERIOD,
 	MULTIPLAYER
+};
+
+enum multiplayer_state
+{
+	WAITING = 0,
+	PLAYING
 };
 
 enum game_state game_state;
 enum game_state next_game_state;
+
+enum multiplayer_state multi_state;
+enum multiplayer_state next_multi_state;
+
+int seconds_until_game = 30;
 
 int main(int argc, char *args[])
 {
@@ -89,6 +102,9 @@ int main(int argc, char *args[])
 
 	game_state = MENU;
 	next_game_state = game_state;
+
+	multi_state = WAITING;
+	next_multi_state = WAITING;
 
 	//bg_image = load_image("resources/images/test4.bmp");
 	test_level = level_init(renderer, "resources/levels/testlevel.lvl");
@@ -112,7 +128,7 @@ int main(int argc, char *args[])
 
 void game_loop()
 {
-	printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
+	//printf("Enter o for single player mode, h to host a multiplayer game, or m to join one.\n");
 
 	while (running)
 	{
@@ -143,12 +159,7 @@ void game_loop()
 			}
 			else if ((event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) && !event.key.repeat)
 			{
-				if (game_state == MENU)
-				{
-					next_game_state = process_choice_input(event.key.keysym);
-				}
-				else
-					process_input(event.type, event.key.keysym);
+				process_input(event.type, event.key.keysym);
 			}
 		}
 
@@ -159,14 +170,31 @@ void game_loop()
 
 		if (game_state == CONNECTING)
 		{
-			server_socket = connect_to_server("127.0.0.1");
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderClear(renderer);
+
+			char temp[128];
+			snprintf(temp, sizeof temp, "Connecting to %s", server_ip);
+
+			render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 60, temp, (SDL_Color){50, 90, 160, 255});
+			SDL_RenderPresent(renderer);
+
+			//SDL_Delay(2000);
+
+			printf("Trying to connect to %s\n", server_ip);
+			server_socket = connect_to_server(server_ip);
+			printf("got back: %d\n", server_socket);
 			if (server_socket != -1)
 			{
-				next_game_state = WAIT_PERIOD;
+				next_game_state = MULTIPLAYER;
+			}
+			else
+			{
+				next_game_state = MENU;
 			}
 		}
 
-		if (game_state == WAIT_PERIOD || game_state == MULTIPLAYER)
+		if (game_state == MULTIPLAYER)
 		{
 			struct server_packet serv_msg;
 
@@ -179,6 +207,8 @@ void game_loop()
 				{
 					//handle gracefully
 					printf("Connection to server closed unexpectedly.\n");
+					next_multi_state = WAITING;
+					next_game_state = MENU;
 					break;
 				}
 				else if (size < 0)
@@ -186,9 +216,10 @@ void game_loop()
 					if (errno != EWOULDBLOCK && errno != EAGAIN)
 					{
 						printf("Error reading from server socket: %s\n", strerror(errno));
-
 						//TODO: handle gracefully
-						exit(1);
+						next_multi_state = WAITING;
+						next_game_state = MENU;
+						//exit(1);
 					}
 					break;
 				}
@@ -196,7 +227,8 @@ void game_loop()
 				switch (serv_msg.type)
 				{
 				case WAIT_STATUS:
-					printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
+					seconds_until_game = serv_msg.data.wait_status.seconds_left;
+					//printf("%d seconds left until game start.\n", serv_msg.data.wait_status.seconds_left);
 					break;
 				case CONNECTION_REQUEST_RESPONSE:
 					if (serv_msg.data.connection_request_response.accepted)
@@ -208,11 +240,13 @@ void game_loop()
 					{
 						//todo: gracefully handle, maybe by printing msg and returning to menu
 						printf("Connection request was not accepted.\n");
-						exit(1);
+						next_multi_state = WAITING;
+						next_game_state = MENU;
+						//exit(1);
 					}
 					break;
 				case START_RACE:
-					next_game_state = MULTIPLAYER;
+					next_multi_state = PLAYING;
 					printf("Start race received.\n");
 					break;
 				case CLIENT_POSITIONS:
@@ -242,29 +276,40 @@ void game_loop()
 
 			struct client_packet packet = {0};
 
-			if (game_state == WAIT_PERIOD)
+			if (multi_state == WAITING)
 			{
+				SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+				SDL_RenderClear(renderer);
+
+				char temp[128];
+				snprintf(temp, sizeof temp, "Game starts in %d seconds.", seconds_until_game);
+
+				render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 50, temp, (SDL_Color){50, 90, 160, 255});
+				SDL_RenderPresent(renderer);
+
 				packet.type = KEEP_ALIVE;
 			}
-			else if (game_state == MULTIPLAYER)
+			else if (multi_state == PLAYING)
 			{
 				packet.type = CURRENT_INPUTS;
 
 				struct current_inputs inputs = {.wasd = wasd, .id = clients[0].id};
 				packet.data.current_inputs = inputs;
-			}
 
+				kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
+				render_game(dt);
+			}
 			write(server_socket, &packet, sizeof packet);
 		}
 
-		if (game_state == SINGLE_PLAYER || game_state == MULTIPLAYER)
+		if (game_state == SINGLE_PLAYER)
 		{
 			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
-
 			render_game(dt);
 		}
 
 		game_state = next_game_state;
+		multi_state = next_multi_state;
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
 }
@@ -288,62 +333,80 @@ void process_input(int type, SDL_Keysym keysym)
 	{
 		wasd.x += multiplier;
 	}
-}
 
-enum game_state process_choice_input(SDL_Keysym keysym)
-{
-	bool msg = true;
-
-	switch (keysym.sym)
+	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
-	case SDLK_o:
-		printf("Selected single player mode.\n");
-		return SINGLE_PLAYER;
-	case SDLK_m:
-		printf("Selected connection mode mode.\n");
-		return CONNECTING;
-	case SDLK_h:
-		write(server_pipe[1], &msg, sizeof msg);
+		next_game_state = MENU;
 
-		return CONNECTING;
-		printf("Selected hosting mode.\n");
-	default:
-		return MENU;
+		//DARIUS, NEXTWORKING CLEANUP HERE
 	}
 }
+
+// enum game_state process_choice_input(SDL_Keysym keysym)
+// {
+// 	bool msg = true;
+//
+// 	switch (keysym.sym)
+// 	{
+// 	case SDLK_o:
+// 		printf("Selected single player mode.\n");
+// 		return SINGLE_PLAYER;
+// 	case SDLK_m:
+// 		printf("Selected connection mode mode.\n");
+// 		return CONNECTING;
+// 	case SDLK_h:
+// 		write(server_pipe[1], &msg, sizeof msg);
+//
+// 		return CONNECTING;
+// 		printf("Selected hosting mode.\n");
+// 	default:
+// 		return MENU;
+// 	}
+// }
 
 void render_menu(double dt)
 {
 	SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
 	SDL_RenderClear(renderer);
 
-	SDL_SetRenderDrawColor(renderer, 90, 50, 150, 255);
-
-	SDL_Rect single_rect = {window_size.x / 2, window_size.y / 2, 600, 125};
+	SDL_Rect single_rect = {window_size.x / 2, 300, 600, 100};
 	single_rect.x -= single_rect.w / 2;
 	single_rect.y -= single_rect.h / 2;
 
-	SDL_RenderFillRect(renderer, &single_rect);
+	char mouse_over_single = render_button(renderer, &single_rect, (SDL_Color){90, 50, 150, 255}, font, "Singleplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_single && mouse_clicked)
+	{
+		next_game_state = SINGLE_PLAYER;
+	}
 
-	SDL_Surface *solid = TTF_RenderText_Solid(font, "Singleplayer", (SDL_Color){255, 255, 255, 255});
-	SDL_Texture *text_texture = surface_to_texture(renderer, solid);
+	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};
+	multi_create.x -= multi_create.w / 2;
+	multi_create.y -= multi_create.h / 2;
 
-	SDL_Rect text_bounds = {0, 0, 0, 0};
+	char mouse_over_create = render_button(renderer, &multi_create, (SDL_Color){90, 50, 150, 255}, font, "Create Multiplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_create && mouse_clicked)
+	{
+		bool msg = true;
+		write(server_pipe[1], &msg, sizeof msg);
+		strncpy(server_ip, "127.0.0.1", 15);
+		next_game_state = CONNECTING;
+	}
 
-	SDL_QueryTexture(text_texture, NULL, NULL, &text_bounds.w, &text_bounds.h);
-	double asp_ratio = text_bounds.h / (double)text_bounds.w;
+	SDL_Rect multi_join = {window_size.x / 2, 600, 600, 100};
+	multi_join.x -= multi_join.w / 2;
+	multi_join.y -= multi_join.h / 2;
 
-	//printf("%lf\n", asp_ratio);
-
-	SDL_Rect text_rect = single_rect;
-	text_rect.x += 10;
-	text_rect.y += 10;
-	//text_rect.w -= 20;
-	//text_rect.h = (int) (text_rect.w * asp_ratio);
-	text_rect.h -= 20;
-	text_rect.w = (int)(text_rect.h * (1 / asp_ratio));
-
-	SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
+	char mouse_over_join = render_button(renderer, &multi_join, (SDL_Color){90, 50, 150, 255}, font, "Join Multiplayer", &mouse_pos, single_rect.h - 20);
+	if (mouse_over_join && mouse_clicked)
+	{
+		printf("Server IP: ");
+		fflush(stdout);
+		fgets(server_ip, 16, stdin);
+		if (server_ip[14] == '\n')
+			server_ip[14] = 0;
+		next_game_state = CONNECTING;
+		SDL_Delay(500);
+	}
 
 	SDL_RenderPresent(renderer);
 }

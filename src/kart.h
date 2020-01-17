@@ -1,13 +1,19 @@
 #ifndef KART_INCLUDE
 #define KART_INCLUDE
 
+#define _GNU_SOURCE
+
+#include <SDL2/SDL.h>
+
 #include "vec2.h"
+
 
 struct kart {
   struct vec2 direction;
   struct vec2 position;
   struct vec2 velocity;
   struct vec2 acceleration;
+  SDL_Rect * kart_rect;
 };
 
 

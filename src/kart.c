@@ -20,6 +20,7 @@ struct kart kart_init()
   temp.position = (vec2){0};
   temp.velocity = (vec2){0};
   temp.acceleration = (vec2){0};
+  temp.kart_rect; 
   return temp;
 }
 
@@ -80,7 +81,8 @@ void kart_update_velocity(struct kart *current_kart)
   }
 }
 
-void kart_reverse_direction(struct kart * current_kart){
+void kart_reverse_direction(struct kart * current_kart)
+{
   current_kart -> direction = v2_rotate(current_kart -> direction, 3.14);
 }
 

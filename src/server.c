@@ -78,6 +78,11 @@ void server_main(int read_pipe)
             continue;
         }
 
+        // UNCOMMENT
+        // if (num_clients < MIN_CLIENTS) {
+        //     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
+        // }
+
         clock_gettime(CLOCK_MONOTONIC, &current_time);
 
         //handle new conenctions
@@ -184,6 +189,7 @@ void server_main(int read_pipe)
             }
 
             //if the countdown has elapsed and there are at least two players start
+            //else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients >= MIN_CLIENTS)
             else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 0)
             {
                 next_game_state = BEGINNING_RACE;

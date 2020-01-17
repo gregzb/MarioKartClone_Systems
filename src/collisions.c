@@ -1,4 +1,4 @@
-/*
+
 #define _GNU_SOURCE
 
 #include <SDL2/SDL.h>
@@ -23,19 +23,15 @@
 
 #define TERRAIN_MASS 
 
-vec2 new_velocity(struct kart cart);
-vec2 conservation_momentum(struct kart cart);
 
 
-
-int check_collisions(struct kart cart) {
-    if (SDL_IntersectRect(cart.kart_rect, SDL_Rect terrain_rect, SDL_Rect resultant)){
-        cart.velocity = update_velocity()
-        cart.direction = 
+int check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
+    if (SDL_IntersectRect(cart->kart_rect, terrain_rect, resultant)){
+        kart_reverse_velocity(cart);
+        kart_reverse_direction(cart);
     }
 }
 
-*/
 
 
 
