@@ -12,17 +12,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <errno.h>
-
-#include "vec2.h"
-#include "time_util.h"
-#include "server.h"
-#include "kart.h"
-#include "level.h"
-#include "sdl_utils.h"
-#include "networking.h"
-
-#define TERRAIN_MASS 
-
+#include "collisions.h"
 
 
 bool check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
