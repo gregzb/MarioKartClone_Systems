@@ -29,7 +29,9 @@ int check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Re
     if (SDL_IntersectRect(cart->kart_rect, terrain_rect, resultant)){
         kart_reverse_velocity(cart);
         kart_reverse_direction(cart);
+        return 0;
     }
+    return 1; 
 }
 
 
