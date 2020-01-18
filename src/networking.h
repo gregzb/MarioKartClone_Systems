@@ -110,6 +110,5 @@ int connect_to_server(char *ip);
 void error_check(int i, char *s);
 int server_setup();
 int try_listen_for_client(int sd);
-int connect_to_server(char *ip);
 
 #endif

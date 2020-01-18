@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 // CODE BELOW IS DIRECTLY "FORKED" FROM MR. DW
 
@@ -93,9 +96,13 @@ int connect_to_server(char *ip)
 {
     int sd;
 
+    fprintf(stderr, "a: 1\n");
+
     //create the socket
     sd = socket(AF_INET, SOCK_STREAM, 0);
     error_check(sd, "client socket");
+
+    fprintf(stderr, "a: 2\n");
 
     //run getaddrinfo
     /* hints->ai_flags not needed because the client
@@ -106,12 +113,18 @@ int connect_to_server(char *ip)
     hints->ai_socktype = SOCK_STREAM; //TCP socket
     getaddrinfo(ip, PORT, hints, &results);
 
+    fprintf(stderr, "a: 3\n");
+
     //connect to the server
     //connect will bind the socket for us
     int i = connect(sd, results->ai_addr, results->ai_addrlen);
 
+    fprintf(stderr, "a: 4\n");
+
     free(hints);
     freeaddrinfo(results);
+
+    fprintf(stderr, "a: 5\n");
 
     if (i < 0)
     {
@@ -119,7 +132,11 @@ int connect_to_server(char *ip)
         return -1;
     }
 
+    fprintf(stderr, "a: 6\n");
+
     error_check(fcntl(sd, F_SETFL, fcntl(sd, F_GETFL, 0) | O_NONBLOCK), "set client to server socket to nonblock");
+
+    fprintf(stderr, "a: 7\n");
 
     return sd;
 }
