@@ -13,7 +13,7 @@ struct kart {
   struct vec2 position;
   struct vec2 velocity;
   struct vec2 acceleration;
-  SDL_Rect * kart_rect;
+  SDL_Point size;
 };
 
 

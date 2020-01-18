@@ -26,7 +26,8 @@
 
 
 bool check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
-    if (SDL_IntersectRect(cart->kart_rect, terrain_rect, resultant)){
+    SDL_Rect temp = {0, 0, cart->size.x, cart->size.y};
+    if (SDL_IntersectRect(&temp, terrain_rect, resultant)){
         kart_reverse_velocity(cart);
         kart_reverse_direction(cart);
         return true;

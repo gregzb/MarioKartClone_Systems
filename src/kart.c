@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <SDL2/SDL.h>
+
 #include "kart.h"
 #include "vec2.h"
 
@@ -20,7 +22,7 @@ struct kart kart_init()
   temp.position = (vec2){0};
   temp.velocity = (vec2){0};
   temp.acceleration = (vec2){0};
-  temp.kart_rect;
+  temp.size = (SDL_Point) {25, 25};
   return temp;
 }
 

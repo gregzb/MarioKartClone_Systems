@@ -56,6 +56,9 @@ memcheck_full:
 bear: clean
 	make -B
 
+install:
+	sudo apt install pkg-config libsdl2-dev libsdl2-ttf-dev
+
 -include $(DEPS)
 
 MKDIR_P ?= mkdir -p
