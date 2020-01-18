@@ -98,7 +98,9 @@ int main(int argc, char *args[])
 	}
 
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
-		return -1;
+	{
+		kill(pid, SIGKILL);
+	}
 
 	game_state = MENU;
 	next_game_state = game_state;
@@ -124,6 +126,9 @@ int main(int argc, char *args[])
 	num_clients = 2;
 
 	game_loop();
+
+	//close server process
+	kill(pid, SIGKILL);
 }
 
 void game_loop()
