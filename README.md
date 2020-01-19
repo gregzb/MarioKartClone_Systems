@@ -11,6 +11,7 @@ We will be making a top-down version of a game similar to Mario Kart where we pl
 
 ## How to Use:
 Start the game by running make, and make run. The menu will display.
+
 To play Single Player:
 Click single player. Your kart will be spawned and you can control its direction using the AWSD (left, forward, backwards, right) keys. The A and D keys will rotate your kart while the W and S keys will allow you to move forward and backwards. <INCLUDE DESCRIPTIONS OF EXACTLY HOW YOU WILL BE PLAYING>
  
