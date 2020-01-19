@@ -25,12 +25,15 @@
 
 
 
-bool check_terrain_collisions(struct kart * cart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
-    SDL_Rect temp = {0, 0, cart->size.x, cart->size.y};
+bool check_terrain_collisions(struct kart * kart, SDL_Rect * terrain_rect, SDL_Rect * resultant) {
+    SDL_Rect temp = {kart -> position.x, kart -> position.y, kart->size.x, kart->size.y};
     if (SDL_IntersectRect(&temp, terrain_rect, resultant)){
-        kart_reverse_velocity(cart);
-        kart_reverse_direction(cart);
-        return true;
+        if (kart -> direction.x == 0 || kart -> direction.y == 0)//SDL CODE FOR CHECKING IF ITS HEAD ON, SOMETHING ALONG THE LINES OF IS THE CETNER TO COLLISION PERPENDICULAR TO THE WALL?
+        {
+          set_velocity(kart, ((vec2){0}));
+          return true;
+        }
+        //insert other cases
     }
     return false;
 }

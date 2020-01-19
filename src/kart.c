@@ -92,3 +92,13 @@ void kart_reverse_velocity(struct kart * current_kart)
 {
   current_kart -> velocity = v2_mult(current_kart -> velocity, -1);
 }
+
+void set_velocity(struct kart *current_kart, vec2 velocity)
+{
+  current_kart -> velocity = velocity;
+}
+
+void kart_set_direction(struct kart *current_kart, vec2 direction)
+{
+  current_kart -> direction = direction;
+}
