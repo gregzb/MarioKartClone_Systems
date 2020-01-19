@@ -30,7 +30,6 @@ void game_loop();
 void render_menu(double dt);
 void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
-enum game_state process_choice_input(SDL_Keysym keysym);
 
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
