@@ -9,6 +9,7 @@
 
 #include "networking.h"
 #include "kart.h"
+#include "level.h"
 #include "time_util.h"
 
 #define CONNECT_COUNTDOWN 30
@@ -58,6 +59,9 @@ void server_main(int read_pipe)
 
     //id which will be given to next connecting client
     int next_id = 1;
+
+    //current level: will be updated for different level logic
+    struct level test_level = level_init(NULL, "resources/levels/testlevel.lvl");
 
     //time at which countdown begins
     struct timespec countdown_start;
@@ -166,6 +170,12 @@ void server_main(int read_pipe)
                             // }
                             kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
 
+                            //handle collision with level
+                            for (int j = 0; j < test_level.num_boxes; j++)
+                            {
+                                SDL_Rect rect = test_level.collision_boxes[j];
+                                kart_handle_collision(&clients[i].client.kart, &rect, dt);
+                            }
                             break;
                         }
                     }
