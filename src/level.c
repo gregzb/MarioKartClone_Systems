@@ -27,6 +27,12 @@ struct level level_init(SDL_Renderer* renderer, char* level_name) {
   int file_name_length = strlen(data) + 1;
 
   cursor += file_name_length;
+  if (renderer)
+  {
+    temp.level_image = load_image(renderer, data);
+    SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
+  }
+  else temp.level_image = NULL;
 
   int* coll_dat = (int*) ((char*)data + cursor);
   temp.num_boxes = coll_dat[0];
