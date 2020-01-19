@@ -84,6 +84,7 @@ int seconds_until_game = 30;
 
 int main(int argc, char *args[])
 {
+
 	error_check(pipe(server_pipe), "created pipe.");
 	int pid = fork();
 
@@ -96,9 +97,13 @@ int main(int argc, char *args[])
 		return 0;
 	}
 
+	//SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
+	//SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 	{
 		kill(pid, SIGKILL);
+		return -1;
 	}
 
 	game_state = MENU;
@@ -134,6 +139,7 @@ int main(int argc, char *args[])
 
 	//close server process
 	kill(pid, SIGKILL);
+	return -1;
 }
 
 void game_loop()
@@ -148,6 +154,8 @@ void game_loop()
 		{
 			continue;
 		}
+
+		//printf("1: %lf\n", dt);
 
 		char fps_title[256];
 		snprintf(fps_title, 256, "Mario Kart Clone | %.2lf FPS", 1 / dt);
@@ -400,6 +408,7 @@ void render_menu(double dt)
 		write(server_pipe[1], &msg, sizeof msg);
 		strncpy(server_ip, "127.0.0.1", 15);
 		next_game_state = CONNECTING;
+		SDL_Delay(250);
 	}
 
 	SDL_Rect multi_join = {window_size.x / 2, 600, 600, 100};
@@ -415,7 +424,7 @@ void render_menu(double dt)
 		if (server_ip[14] == '\n')
 			server_ip[14] = 0;
 		next_game_state = CONNECTING;
-		SDL_Delay(500);
+		SDL_Delay(250);
 	}
 
 	SDL_RenderPresent(renderer);

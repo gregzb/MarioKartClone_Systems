@@ -49,14 +49,15 @@ struct kart kart_init()
 void kart_move(struct kart *current_kart, char acc, char lr, double dt)
 { // lr should be -1 for left, 1 for right, 0 for neither
   //printf("%lf %lf\n", v2_mag(current_kart->velocity), dt);
-  current_kart->velocity = v2_mult(current_kart->velocity, 1 - DRAG);
+  //printf("doot: %f %f\n", (1-DRAG), (1 - DRAG * (dt*60)));
+  current_kart->velocity = v2_mult(current_kart->velocity, (1 - DRAG * (dt*60)));
   if (v2_mag(current_kart->velocity) > dt * 20 || 1)
   {
     kart_update_direction(current_kart, lr, dt);
   }
   vec2 accel = v2_mult(v2_normalize(current_kart->direction), CONSTANT_ACCEL * acc * dt);
   current_kart->acceleration = accel;
-  kart_update_velocity(current_kart);
+  kart_update_velocity(current_kart, dt);
   kart_update_position(current_kart);
 }
 
@@ -73,13 +74,14 @@ void kart_update_position(struct kart *current_kart)
   current_kart->position = v2_add(current_kart->position, current_kart->velocity);
 }
 
-void kart_update_velocity(struct kart *current_kart)
+void kart_update_velocity(struct kart *current_kart, double dt)
 {
   //current_kart->velocity = v2_add(current_kart->velocity, v2_mult(current_kart->acceleration, dt));
   current_kart->velocity = v2_add(current_kart->velocity, current_kart->acceleration);
-  if (v2_mag(current_kart->velocity) > MAX_VELOCITY)
+  //printf("%f %f\n", MAX_VELOCITY, MAX_VELOCITY * (dt*60));
+  if (v2_mag(current_kart->velocity) > MAX_VELOCITY * (dt*60))
   {
-    current_kart->velocity = v2_mult(v2_normalize(current_kart->velocity), MAX_VELOCITY);
+    current_kart->velocity = v2_mult(v2_normalize(current_kart->velocity), MAX_VELOCITY * (dt*60));
   }
 }
 
