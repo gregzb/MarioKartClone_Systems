@@ -113,11 +113,17 @@ int main(int argc, char *args[])
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
 
+	// clients[0].kart = kart_init();
+	// clients[0].kart.position = (vec2){test_level.size.x, test_level.size.y};
+
+	// clients[1].kart = kart_init();
+	// clients[1].kart.position = (vec2){test_level.size.x + 50, test_level.size.y};
+
 	clients[0].kart = kart_init();
-	clients[0].kart.position = (vec2){window_size.x / 2, window_size.y / 2};
+	clients[0].kart.position = (vec2){640, 480};
 
 	clients[1].kart = kart_init();
-	clients[1].kart.position = (vec2){window_size.x / 2 + 50, window_size.y / 2};
+	clients[1].kart.position = (vec2){670, 480};
 
 	printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
 
@@ -418,23 +424,33 @@ void render_game(double dt)
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 
+	// SDL_Rect dst;
+	// dst.w = window_size.x;
+	// dst.h = window_size.y;
+	// dst.x = -clients[0].kart.position.x * 2 + dst.w / 2;
+	// dst.y = -clients[0].kart.position.y * 2 + dst.h / 2;
+	
 	SDL_Rect dst;
-	dst.w = window_size.x * 2;
-	dst.h = window_size.y * 2;
-	dst.x = -clients[0].kart.position.x * 2 + dst.w / 4;
-	dst.y = -clients[0].kart.position.y * 2 + dst.h / 4;
+	dst.w = test_level.size.x * test_level.scale_factor;
+	dst.h = test_level.size.y * test_level.scale_factor;
+	// dst.w = test_level.size.x * 1;
+	// dst.h = test_level.size.y * 1;
+	dst.x = -clients[0].kart.position.x * test_level.scale_factor + window_size.x / 2;
+	dst.y = -clients[0].kart.position.y * test_level.scale_factor + window_size.y / 2;
 
 	SDL_Point rot_point;
-	rot_point.x = clients[0].kart.position.x * 2;
-	rot_point.y = clients[0].kart.position.y * 2;
+	//test_level.scale_factor ? instead of 2???
+	rot_point.x = clients[0].kart.position.x * test_level.scale_factor;
+	rot_point.y = clients[0].kart.position.y * test_level.scale_factor;
 
 	double rot_angle = v2_angle(clients[0].kart.direction);
 
 	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
 
+	//div size by scale factor
 	SDL_Rect center;
-	center.w = 25;
-	center.h = 25;
+	center.w = clients[0].kart.size.x * test_level.scale_factor;
+	center.h = clients[0].kart.size.y * test_level.scale_factor;
 	center.x = window_size.x / 2 - center.w / 2;
 	center.y = window_size.y / 2 - center.h / 2;
 
@@ -443,16 +459,18 @@ void render_game(double dt)
 	for (int i = 1; i < num_clients; i++)
 	{
 		vec2 subbed = v2_sub(clients[i].kart.position, clients[0].kart.position);
-		vec2 mult = v2_mult(subbed, 2);
+		//test_level.scale_factor? where he go
+		vec2 mult = v2_mult(subbed, test_level.scale_factor);
 		vec2 rotted = v2_rotate(mult, -rot_angle - M_PI / 2);
 		vec2 added = v2_add(rotted, (vec2){center.x + center.w / 2, center.y + center.w / 2});
 
+		//div size by scale factor
 		SDL_Rect kart_render_pos;
-		kart_render_pos.w = 25;
-		kart_render_pos.h = 25;
+		kart_render_pos.w = clients[i].kart.size.x * test_level.scale_factor;
+		kart_render_pos.h = clients[i].kart.size.y * test_level.scale_factor;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
-		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180, NULL, 0);
+		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180 + v2_angle(clients[i].kart.direction), NULL, 0);
 	}
 
 	SDL_RenderPresent(renderer);

@@ -22,7 +22,7 @@ struct kart kart_init()
   temp.position = (vec2){0};
   temp.velocity = (vec2){0};
   temp.acceleration = (vec2){0};
-  temp.size = (SDL_Point) {25, 25};
+  temp.size = (SDL_Point) {15, 15};
   return temp;
 }
 

@@ -15,8 +15,11 @@ struct level level_init(SDL_Renderer* renderer, char* level_name) {
   int fd = open(level_name, O_RDONLY);
   char data[4096];
   int data_size = read(fd, &data, 4096);
+  close(fd);
 
   temp.level_image = load_image(renderer, data);
+
+  SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
 
   int file_name_length = strlen(data);
 
@@ -36,6 +39,8 @@ struct level level_init(SDL_Renderer* renderer, char* level_name) {
     coll_box.h = coll_dat[i*4 + 3];
     temp.collision_boxes[i] = coll_box;
   }
+
+  temp.scale_factor = 3;
 
   return temp;
 }
