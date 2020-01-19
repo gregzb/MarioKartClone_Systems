@@ -17,9 +17,12 @@ struct level level_init(SDL_Renderer* renderer, char* level_name) {
   int data_size = read(fd, &data, 4096);
   close(fd);
 
-  temp.level_image = load_image(renderer, data);
-
-  SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
+  if (renderer)
+  {
+    temp.level_image = load_image(renderer, data);
+    SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
+  }
+  else temp.level_image = NULL;
 
   int file_name_length = strlen(data);
 
