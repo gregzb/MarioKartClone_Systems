@@ -125,15 +125,15 @@ int main(int argc, char *args[])
 	// clients[1].kart = kart_init();
 	// clients[1].kart.position = (vec2){test_level.size.x + 50, test_level.size.y};
 
-	clients[0].kart = kart_init();
-	clients[0].kart.position = (vec2){640, 480};
-
-	clients[1].kart = kart_init();
-	clients[1].kart.position = (vec2){670, 480};
+	for (int i = 0; i < 4; i++)
+	{
+		clients[i].kart = kart_init();
+		clients[i].kart.position = (vec2){test_level.spawn_points[i].x, test_level.spawn_points[i].y};
+	}
 
 	//printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
 
-	num_clients = 2;
+	num_clients = 4;
 
 	game_loop();
 
