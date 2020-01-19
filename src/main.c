@@ -131,7 +131,7 @@ int main(int argc, char *args[])
 	clients[1].kart = kart_init();
 	clients[1].kart.position = (vec2){670, 480};
 
-	printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
+	//printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
 
 	num_clients = 2;
 
@@ -212,6 +212,8 @@ void game_loop()
 			}
 		}
 
+		char conn_ok = 1;
+
 		if (game_state == MULTIPLAYER)
 		{
 			struct server_packet serv_msg;
@@ -227,6 +229,7 @@ void game_loop()
 					printf("Connection to server closed unexpectedly.\n");
 					next_multi_state = WAITING;
 					next_game_state = MENU;
+					conn_ok = 0;
 					break;
 				}
 				else if (size < 0)
@@ -237,6 +240,7 @@ void game_loop()
 						//TODO: handle gracefully
 						next_multi_state = WAITING;
 						next_game_state = MENU;
+						conn_ok = 0;
 						//exit(1);
 					}
 					break;
@@ -291,6 +295,9 @@ void game_loop()
 				break;
 				}
 			}
+		}
+		if (game_state == MULTIPLAYER && conn_ok)
+		{
 
 			struct client_packet packet = {0};
 
@@ -315,6 +322,14 @@ void game_loop()
 				packet.data.current_inputs = inputs;
 
 				kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
+				for (int j = 0; j < num_clients; j++)
+				{
+					for (int i = 0; i < test_level.num_boxes; i++)
+					{
+						SDL_Rect rect = test_level.collision_boxes[i];
+						kart_handle_collision(&clients[j].kart, &rect, dt);
+					}
+				}
 				render_game(dt);
 			}
 			write(server_socket, &packet, sizeof packet);
@@ -323,6 +338,14 @@ void game_loop()
 		if (game_state == SINGLE_PLAYER)
 		{
 			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
+			for (int j = 0; j < num_clients; j++)
+			{
+				for (int i = 0; i < test_level.num_boxes; i++)
+				{
+					SDL_Rect rect = test_level.collision_boxes[i];
+					kart_handle_collision(&clients[j].kart, &rect, dt);
+				}
+			}
 			render_game(dt);
 		}
 
@@ -442,7 +465,7 @@ void render_game(double dt)
 	// dst.h = window_size.y;
 	// dst.x = -clients[0].kart.position.x * 2 + dst.w / 2;
 	// dst.y = -clients[0].kart.position.y * 2 + dst.h / 2;
-	
+
 	SDL_Rect dst;
 	dst.w = test_level.size.x * test_level.scale_factor;
 	dst.h = test_level.size.y * test_level.scale_factor;
@@ -483,7 +506,9 @@ void render_game(double dt)
 		kart_render_pos.h = clients[i].kart.size.y * test_level.scale_factor;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
-		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180 + v2_angle(clients[i].kart.direction), NULL, 0);
+		SDL_SetRenderDrawColor(renderer, 127, 40, 0, 255);
+		SDL_RenderFillRect(renderer, &kart_render_pos);
+		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180 + v2_angle(clients[i].kart.direction) * (180 / M_PI) + 90, NULL, 0);
 	}
 
 	SDL_RenderPresent(renderer);

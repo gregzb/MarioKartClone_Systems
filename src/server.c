@@ -159,6 +159,11 @@ void server_main(int read_pipe)
                         if (clients[i].client.id == packet.data.current_inputs.id)
                         {
                             clients[i].wasd = packet.data.current_inputs.wasd;
+                            // for (int j = 0; j < current_level.num_boxes; j++)
+                            // {
+                            //     SDL_Rect rect = current_level.collision_boxes[j];
+                            //     kart_handle_collision(&clients[j].client.kart, &rect, dt);
+                            // }
                             kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
 
                             break;

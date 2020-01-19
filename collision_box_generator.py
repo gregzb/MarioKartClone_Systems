@@ -56,7 +56,7 @@ def solve_image(image_file_name):
 
   for x in range(w):
     for y in range(h):
-      if (x, y) not in visited and pixel_data[(x,y)] != (255, 255, 255):
+      if (x, y) not in visited and (pixel_data[(x,y)] != (255, 255, 255) and pixel_data[(x,y)] != (0, 0, 0, 0)) :
         #print(row, col)
         dfs(pixel_data, (x, y), bounds, id)
         id += 1
@@ -79,6 +79,7 @@ def main():
 
   for i in sections:
     point_list = sections[i]
+    #print(point_list[0])
     min_x, min_y = 999999999999, 999999999999
     max_x, max_y = -999999999999, -999999999999
 
@@ -92,12 +93,13 @@ def main():
 
   with open('resources/levels/testlevel.lvl', 'wb') as f:
     f.write(b'resources/images/test4.bmp\0')
+    #f.write(bytes([0]))
     #f.write((65534).to_bytes(4, byteorder='big'))
     for box in boxes:
-      f.write(box.x.to_bytes(4, byteorder='big'))
-      f.write(box.y.to_bytes(4, byteorder='big'))
-      f.write(box.w.to_bytes(4, byteorder='big'))
-      f.write(box.h.to_bytes(4, byteorder='big'))
+      f.write(box.x.to_bytes(4, byteorder='little'))
+      f.write(box.y.to_bytes(4, byteorder='little'))
+      f.write(box.w.to_bytes(4, byteorder='little'))
+      f.write(box.h.to_bytes(4, byteorder='little'))
 
   print(boxes)
 

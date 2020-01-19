@@ -6,6 +6,7 @@ struct level {
   SDL_Texture * level_image;
   SDL_Point size;
   SDL_Rect * collision_boxes;
+  int num_boxes;
   double scale_factor;
 };
 

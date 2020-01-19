@@ -28,6 +28,7 @@ void kart_update_position(struct kart * current_kart);
 void kart_update_velocity(struct kart * current_kart, double dt);
 void kart_reverse_direction(struct kart * current_kart);
 void kart_reverse_velocity(struct kart * current_kart);
+void kart_handle_collision(struct kart *current_kart, SDL_Rect *rect, double dt);
 // struct kart update_acceleration(struct kart current_kart, int xdir, int ydir);//negative number for down, left, position for up, right, 0 for neither
 // int add_acceleration(double currentA, double addition, int dir);
 
