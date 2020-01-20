@@ -72,8 +72,7 @@ void server_main(int read_pipe)
         num_levels++;
     }
 
-    //int current_level = rand() % NUM_LEVELS;
-    int current_level = 1;
+    int current_level = 0;
 
     //time at which countdown begins
     struct timespec countdown_start;
