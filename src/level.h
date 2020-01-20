@@ -21,6 +21,7 @@ struct level {
   SDL_Rect * cp_2;
   int num_cp_2;
   double scale_factor;
+  char music_file[32];
 };
 
 //renderer may be NULL, indicating no level image will be loaded
