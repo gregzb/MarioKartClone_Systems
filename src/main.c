@@ -105,7 +105,6 @@ int main(int argc, char *args[])
 
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 	{
-		kill(pid, SIGKILL);
 		return -1;
 	}
 
@@ -147,8 +146,7 @@ int main(int argc, char *args[])
 	game_loop();
 
 	//close server process
-	kill(pid, SIGKILL);
-	return -1;
+	return 0;
 }
 
 void game_loop()
