@@ -9,10 +9,16 @@
 #include "level.h"
 #include "sdl_utils.h"
 
+char *level_names[] = {"resources/levels/testlevel.lvl", "resources/levels/testlevel2.lvl", NULL};
+
 struct level level_init(SDL_Renderer* renderer, char* level_name) {
   struct level temp;
 
   int fd = open(level_name, O_RDONLY);
+  if(fd < 0)
+  {
+    printf("Error: could not read file %s; %s\n", level_name, strerror(errno));
+  }
   char data[4096];
   int data_size = read(fd, &data, 4096);
   close(fd);

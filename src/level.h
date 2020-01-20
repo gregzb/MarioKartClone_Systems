@@ -1,6 +1,11 @@
-#pragma once
+#ifndef INCLUDE_LEVEL
+#define INCLUDE_LEVEL
 
 #include <SDL2/SDL.h>
+
+#define NUM_LEVELS 2
+
+extern char *level_names[];
 
 struct level {
   //will be NULL if renderer is NULL in level_init
@@ -13,3 +18,5 @@ struct level {
 
 //renderer may be NULL, indicating no level image will be loaded
 struct level level_init(SDL_Renderer* renderer, char* level_name);
+
+#endif
