@@ -301,6 +301,11 @@ void server_instance()
         if (restart)
         {
             close(socket);
+
+            for (int i = 0; i < num_clients; i++)
+            {
+                close(clients[i].socket_descriptor);
+            }
             return;
         }
     }
