@@ -20,6 +20,7 @@
 #include "level.h"
 #include "sdl_utils.h"
 #include "networking.h"
+#include "audio_utils.h"
 
 char init_sdl();
 char init_window();
@@ -109,6 +110,8 @@ int main(int argc, char *args[])
 	{
 		return -1;
 	}
+
+	init_audio();
 
 	game_state = MENU;
 	next_game_state = game_state;
@@ -283,6 +286,8 @@ void game_loop()
 					{
 						printf("Playing level %d\n", serv_msg.data.start_race.level);
 						current_level = &levels[serv_msg.data.start_race.level];
+						printf("Music file: %s\n", current_level->music_file);
+						play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 					}
 					else
 					{
