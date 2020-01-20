@@ -94,6 +94,9 @@ void server_main(int read_pipe)
             continue;
         }
 
+        //exit if parent no longer exists
+        if (getppid() == 1) exit(0);
+
         // UNCOMMENT
         // if (num_clients < MIN_CLIENTS) {
         //     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
