@@ -106,9 +106,9 @@ def sections_to_rect_list(sections):
 
 
 def main():
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 6:
         print(
-            f"usage: python3.8 {__file__} <folder/image> [image folder/file] [picfile] [levelfile]")
+            f"usage: python3.8 {__file__} <folder/image> [image folder/file] [picfile] [musicfile] [levelfile]")
         return
 
     if 'f' in sys.argv[1].lower():
@@ -145,8 +145,11 @@ def main():
     #pic file resources/images/test4.bmp
     #level file resources/levels/testlevel.lvl
 
-    with open(sys.argv[4], 'wb') as f:
+    with open(sys.argv[5], 'wb') as f:
         f.write(str.encode(sys.argv[3]))
+        f.write(bytes([0]))
+
+        f.write(str.encode(sys.argv[4]))
         f.write(bytes([0]))
 
         f.write(len(boxes).to_bytes(4, byteorder='little'))
