@@ -135,7 +135,7 @@ int main(int argc, char *args[])
 	for (int i = 0; i < 4; i++)
 	{
 		clients[i].kart = kart_init();
-		clients[i].kart.position = (vec2){test_level.spawn_points[i].x, test_level.spawn_points[i].y};
+		clients[i].kart.position = (vec2){current_level->spawn_points[i].x, current_level->spawn_points[i].y};
 	}
 
 	//printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);

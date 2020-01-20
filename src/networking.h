@@ -46,7 +46,6 @@ struct keep_alive {};
 //used for client to send its msgs during game
 struct current_inputs
 {
-    //TODO: sunan-- figure out what server needs
     int id;  
     SDL_Point wasd;
 };
@@ -87,7 +86,9 @@ struct wait_status
     size_t client_ids_length;
 };
 
-struct start_race {};
+struct start_race {
+    int level;
+};
 
 struct client_positions
 {
