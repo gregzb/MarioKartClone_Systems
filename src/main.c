@@ -83,7 +83,7 @@ int seconds_until_game = 30;
 
 struct level levels[NUM_LEVELS];
 //todo: initialize this in single_player instead, maybe
-struct level *current_level = &levels[0];
+struct level *current_level;
 
 int main(int argc, char *args[])
 {
@@ -122,6 +122,8 @@ int main(int argc, char *args[])
     {
         levels[i] = level_init(renderer, level_names[i]);
     }
+
+	current_level = &levels[0];
 
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
@@ -271,6 +273,7 @@ void game_loop()
 						printf("Connection request was not accepted.\n");
 						next_multi_state = WAITING;
 						next_game_state = MENU;
+						conn_ok = 0;
 						//exit(1);
 					}
 					break;
@@ -278,6 +281,7 @@ void game_loop()
 					next_multi_state = PLAYING;
 					if (serv_msg.data.start_race.level < NUM_LEVELS)
 					{
+						printf("Playing level %d\n", serv_msg.data.start_race.level);
 						current_level = &levels[serv_msg.data.start_race.level];
 					}
 					else
@@ -285,6 +289,7 @@ void game_loop()
 						printf("Error: unknown level received in start_race.\n");
 						next_multi_state = WAITING;
 						next_game_state = MENU;
+						conn_ok = 0;
 					}
 					
 					printf("Start race received.\n");
