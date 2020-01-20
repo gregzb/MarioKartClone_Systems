@@ -48,7 +48,6 @@ struct timespec init_time;
 struct timespec last_time;
 
 //SDL_Texture * bg_image;
-struct level test_level;
 SDL_Texture *ship_tex = NULL;
 
 TTF_Font *font = NULL;
@@ -82,6 +81,10 @@ enum multiplayer_state next_multi_state;
 
 int seconds_until_game = 30;
 
+struct level levels[NUM_LEVELS];
+//todo: initialize this in single_player instead, maybe
+struct level *current_level = &levels[0];
+
 int main(int argc, char *args[])
 {
 
@@ -113,8 +116,12 @@ int main(int argc, char *args[])
 	next_multi_state = WAITING;
 
 	//bg_image = load_image("resources/images/test4.bmp");
-	test_level = level_init(renderer, "resources/levels/testlevel.lvl");
 	ship_tex = load_image(renderer, "resources/images/smolship.bmp");
+
+    for(int i = 0; level_names[i] != NULL; i++)
+    {
+        levels[i] = level_init(renderer, level_names[i]);
+    }
 
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
@@ -269,6 +276,17 @@ void game_loop()
 					break;
 				case START_RACE:
 					next_multi_state = PLAYING;
+					if (serv_msg.data.start_race.level < NUM_LEVELS)
+					{
+						current_level = &levels[serv_msg.data.start_race.level];
+					}
+					else
+					{
+						printf("Error: unknown level received in start_race.\n");
+						next_multi_state = WAITING;
+						next_game_state = MENU;
+					}
+					
 					printf("Start race received.\n");
 					break;
 				case CLIENT_POSITIONS:
@@ -324,9 +342,9 @@ void game_loop()
 				kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
 				for (int j = 0; j < num_clients; j++)
 				{
-					for (int i = 0; i < test_level.num_boxes; i++)
+					for (int i = 0; i < current_level->num_boxes; i++)
 					{
-						SDL_Rect rect = test_level.collision_boxes[i];
+						SDL_Rect rect = current_level->collision_boxes[i];
 						kart_handle_collision(&clients[j].kart, &rect, dt);
 					}
 				}
@@ -340,9 +358,9 @@ void game_loop()
 			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
 			for (int j = 0; j < num_clients; j++)
 			{
-				for (int i = 0; i < test_level.num_boxes; i++)
+				for (int i = 0; i < current_level->num_boxes; i++)
 				{
-					SDL_Rect rect = test_level.collision_boxes[i];
+					SDL_Rect rect = current_level->collision_boxes[i];
 					kart_handle_collision(&clients[j].kart, &rect, dt);
 				}
 			}
@@ -467,26 +485,26 @@ void render_game(double dt)
 	// dst.y = -clients[0].kart.position.y * 2 + dst.h / 2;
 
 	SDL_Rect dst;
-	dst.w = test_level.size.x * test_level.scale_factor;
-	dst.h = test_level.size.y * test_level.scale_factor;
+	dst.w = current_level->size.x * current_level->scale_factor;
+	dst.h = current_level->size.y * current_level->scale_factor;
 	// dst.w = test_level.size.x * 1;
 	// dst.h = test_level.size.y * 1;
-	dst.x = -clients[0].kart.position.x * test_level.scale_factor + window_size.x / 2;
-	dst.y = -clients[0].kart.position.y * test_level.scale_factor + window_size.y / 2;
+	dst.x = -clients[0].kart.position.x * current_level->scale_factor + window_size.x / 2;
+	dst.y = -clients[0].kart.position.y * current_level->scale_factor + window_size.y / 2;
 
 	SDL_Point rot_point;
 	//test_level.scale_factor ? instead of 2???
-	rot_point.x = clients[0].kart.position.x * test_level.scale_factor;
-	rot_point.y = clients[0].kart.position.y * test_level.scale_factor;
+	rot_point.x = clients[0].kart.position.x * current_level->scale_factor;
+	rot_point.y = clients[0].kart.position.y * current_level->scale_factor;
 
 	double rot_angle = v2_angle(clients[0].kart.direction);
 
-	SDL_RenderCopyEx(renderer, test_level.level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
+	SDL_RenderCopyEx(renderer, current_level->level_image, NULL, &dst, -(rot_angle * 180 / (M_PI)) - 90, &rot_point, 0);
 
 	//div size by scale factor
 	SDL_Rect center;
-	center.w = clients[0].kart.size.x * test_level.scale_factor;
-	center.h = clients[0].kart.size.y * test_level.scale_factor;
+	center.w = clients[0].kart.size.x * current_level->scale_factor;
+	center.h = clients[0].kart.size.y * current_level->scale_factor;
 	center.x = window_size.x / 2 - center.w / 2;
 	center.y = window_size.y / 2 - center.h / 2;
 
@@ -496,14 +514,14 @@ void render_game(double dt)
 	{
 		vec2 subbed = v2_sub(clients[i].kart.position, clients[0].kart.position);
 		//test_level.scale_factor? where he go
-		vec2 mult = v2_mult(subbed, test_level.scale_factor);
+		vec2 mult = v2_mult(subbed, current_level->scale_factor);
 		vec2 rotted = v2_rotate(mult, -rot_angle - M_PI / 2);
 		vec2 added = v2_add(rotted, (vec2){center.x + center.w / 2, center.y + center.w / 2});
 
 		//div size by scale factor
 		SDL_Rect kart_render_pos;
-		kart_render_pos.w = clients[i].kart.size.x * test_level.scale_factor;
-		kart_render_pos.h = clients[i].kart.size.y * test_level.scale_factor;
+		kart_render_pos.w = clients[i].kart.size.x * current_level->scale_factor;
+		kart_render_pos.h = clients[i].kart.size.y * current_level->scale_factor;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
 		SDL_SetRenderDrawColor(renderer, 127, 40, 0, 255);
