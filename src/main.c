@@ -85,11 +85,13 @@ struct level levels[NUM_LEVELS];
 //todo: initialize this in single_player instead, maybe
 struct level *current_level;
 
+int pid;
+
 int main(int argc, char *args[])
 {
 
 	error_check(pipe(server_pipe), "created pipe.");
-	int pid = fork();
+	pid = fork();
 
 	error_check(pid, "forking process.");
 
@@ -399,8 +401,7 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-
-		//DARIUS, NEXTWORKING CLEANUP HERE
+		kill(pid, SIGQUIT);
 	}
 }
 
