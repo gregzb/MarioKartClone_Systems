@@ -60,8 +60,17 @@ void server_main(int read_pipe)
     //id which will be given to next connecting client
     int next_id = 1;
 
-    //current level: will be updated for different level logic
-    struct level test_level = level_init(NULL, "resources/levels/testlevel.lvl");
+    //array of levels
+    struct level levels[8];
+    int num_levels = 0;
+
+    for(int i = 0; level_names[i] != NULL; i++)
+    {
+        levels[i] = level_init(NULL, level_names[i]);
+        num_levels++;
+    }
+
+    int current_level = 0;
 
     //time at which countdown begins
     struct timespec countdown_start;
@@ -171,9 +180,9 @@ void server_main(int read_pipe)
                             kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
 
                             //handle collision with level
-                            for (int j = 0; j < test_level.num_boxes; j++)
+                            for (int j = 0; j < levels[current_level].num_boxes; j++)
                             {
-                                SDL_Rect rect = test_level.collision_boxes[j];
+                                SDL_Rect rect = levels[current_level].collision_boxes[j];
                                 kart_handle_collision(&clients[i].client.kart, &rect, dt);
                             }
                             break;
@@ -228,6 +237,8 @@ void server_main(int read_pipe)
         else if (game_state == BEGINNING_RACE)
         {
             packet.type = START_RACE;
+            struct start_race start = {.level = 1};
+            packet.data.start_race = start;
             next_game_state = IN_RACE;
         }
         else if (game_state == IN_RACE)
