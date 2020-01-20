@@ -52,6 +52,8 @@ void server_main(int read_pipe)
 
     printf("Starting network code.\n");
 
+    srand(time(NULL));
+
     int socket = server_setup();
 
     struct client_connection clients[MAX_CLIENTS];
@@ -70,7 +72,8 @@ void server_main(int read_pipe)
         num_levels++;
     }
 
-    int current_level = 0;
+    //int current_level = rand() % NUM_LEVELS;
+    int current_level = 1;
 
     //time at which countdown begins
     struct timespec countdown_start;
@@ -237,8 +240,15 @@ void server_main(int read_pipe)
         else if (game_state == BEGINNING_RACE)
         {
             packet.type = START_RACE;
-            struct start_race start = {.level = 1};
+            struct start_race start = {.level = current_level};
             packet.data.start_race = start;
+
+            for (int i = 0; i < num_clients; i++)
+            {
+                clients[i].client.kart.position.x = levels[current_level].spawn_points[i].x;
+                clients[i].client.kart.position.y = levels[current_level].spawn_points[i].y;
+            }
+
             next_game_state = IN_RACE;
         }
         else if (game_state == IN_RACE)
