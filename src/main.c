@@ -389,6 +389,10 @@ void game_loop()
 			game_code(dt);
 			if (clients[0].kart.completed_laps >= 3)
 			{
+				clients[0].kart.completed_laps = 0;
+				clients[0].kart.progress[0] = 0;
+				clients[0].kart.progress[1] = 0;
+				clients[0].kart.progress[2] = 0;
 				next_game_state = WIN;
 				next_multi_state = WAITING;
 				//This needs separate server side handling, send a win/lose packet
@@ -672,7 +676,7 @@ void render_game(double dt)
 	}
 
 	char temp[128];
-	snprintf(temp, sizeof temp, "Lap: %d/3", clients[0].kart.completed_laps+1);
+	snprintf(temp, sizeof temp, "Lap: %d/3", clients[0].kart.completed_laps + 1);
 
 	render_text(renderer, font, (SDL_Point){100, 30}, 60, temp, (SDL_Color){127, 127, 200, 255});
 
