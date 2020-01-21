@@ -391,6 +391,31 @@ void game_code(double dt)
 			kart_handle_collision(&clients[j].kart, &rect, dt);
 		}
 	}
+
+	char progress[3];
+	memcpy(progress, clients[0].kart.progress, 3);
+
+	char intersecting = 0;
+	for (int i = 0; i < current_level->num_start_boxes; i++)
+	{
+		SDL_Rect rect = current_level->start_boxes[i];
+		struct v2_rect kart_rect = {clients[0].kart.position.x, clients[0].kart.position.y, clients[0].kart.size.x, clients[0].kart.size.y};
+		kart_rect.x -= kart_rect.w / 2;
+		kart_rect.y -= kart_rect.h / 2;
+
+		struct v2_rect other_rect = {rect.x, rect.y, rect.w, rect.h};
+
+		struct v2_rect intersection = {0};
+		intersecting = v2_rect_intersection(kart_rect, other_rect, &intersection);
+		if (intersecting)
+		{
+			if (progress[0] && progress[1] && progress[2]) {
+				
+			}
+			break;
+		}
+	}
+
 	render_game(dt);
 }
 

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "level.h": "c",
+        "sdl.h": "c",
+        "unordered_map": "c"
+    }
+}

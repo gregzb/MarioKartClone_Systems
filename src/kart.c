@@ -19,13 +19,12 @@ const double DRAG = 0.065;
 
 struct kart kart_init()
 {
-  struct kart temp;
+  struct kart temp = {0};
   temp.direction = (vec2){0, -1};
   temp.position = (vec2){0};
   temp.velocity = (vec2){0};
   temp.acceleration = (vec2){0};
   temp.size = (SDL_Point){15, 15};
-  char progress[3] = {0};
   return temp;
 }
 
