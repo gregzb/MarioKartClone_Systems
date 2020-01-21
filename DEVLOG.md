@@ -11,7 +11,7 @@ __1/[date]/20__ [NAME]:
 
 __1/21/20__ Greg:
 
-Added text to show win/loss scenario. Added kart size to level file. Added remaining levels into code. Added timer on end screen to boot player back to menu. Fixed audio pausing issues. Reset rest of necessary client data. Adjusted server kill logic. Added random level selection. Added game name to menu.
+Added text to show win/loss scenario. Added kart size to level file. Added remaining levels into code. Added timer on end screen to boot player back to menu. Fixed audio pausing issues. Reset rest of necessary client data. Adjusted server kill logic. Added random level selection. Added game name to menu. Fixed a memory leak on the server.
 
 __1/21/20__ Emma: Created another track for a second alternate "level" using GIMP. Created both the basic collision box map and the "pretty" version with a completely different theme.
 
