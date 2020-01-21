@@ -127,7 +127,8 @@ def main():
     point2 = []
 
     for key in total_data:
-        if key in definitions['ignore']:
+        print(key)
+        if key in definitions['ignore'] or key[3] == 0:
             pass
         elif key in definitions['spawnpoints']:
             spawn_points.extend(sections_to_rect_list(total_data[key]))

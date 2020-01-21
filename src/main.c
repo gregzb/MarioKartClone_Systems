@@ -118,10 +118,11 @@ int main(int argc, char *args[])
 	//bg_image = load_image("resources/images/test4.bmp");
 	ship_tex = load_image(renderer, "resources/images/smolship.bmp");
 
-    for(int i = 0; level_names[i] != NULL; i++)
-    {
-        levels[i] = level_init(renderer, level_names[i]);
-    }
+	for (int i = 0; level_names[i] != NULL; i++)
+	{
+		levels[i] = level_init(renderer, level_names[i]);
+		//printf("%d %d\n", levels[i].size.x, levels[i].size.y);
+	}
 
 	current_level = &levels[0];
 
@@ -148,7 +149,7 @@ int main(int argc, char *args[])
 
 	//close server process
 	kill(pid, SIGKILL);
-	return -1;
+	return 0;
 }
 
 void game_loop()
@@ -291,7 +292,7 @@ void game_loop()
 						next_game_state = MENU;
 						conn_ok = 0;
 					}
-					
+
 					printf("Start race received.\n");
 					break;
 				case CLIENT_POSITIONS:
@@ -492,6 +493,7 @@ void render_game(double dt)
 	SDL_Rect dst;
 	dst.w = current_level->size.x * current_level->scale_factor;
 	dst.h = current_level->size.y * current_level->scale_factor;
+	//printf("%d %d\n", dst.w, dst.h);
 	// dst.w = test_level.size.x * 1;
 	// dst.h = test_level.size.y * 1;
 	dst.x = -clients[0].kart.position.x * current_level->scale_factor + window_size.x / 2;

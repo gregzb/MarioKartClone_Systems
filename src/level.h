@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-#define NUM_LEVELS 2
+#define NUM_LEVELS 1
 
 extern char *level_names[];
 
