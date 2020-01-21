@@ -127,7 +127,8 @@ def main():
     point2 = []
 
     for key in total_data:
-        if key in definitions['ignore']:
+        print(key)
+        if key in definitions['ignore'] or key[3] == 0:
             pass
         elif key in definitions['spawnpoints']:
             spawn_points.extend(sections_to_rect_list(total_data[key]))
@@ -169,7 +170,7 @@ def main():
         for box in point2:
             f.write(box.get_bytes())
 
-        f.write(bytes([2]))
+        f.write(bytes([3]))
         
         print(len(boxes))
         print(boxes)

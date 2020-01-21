@@ -9,7 +9,7 @@
 #include "level.h"
 #include "sdl_utils.h"
 
-char *level_names[] = {"resources/levels/testlevel.lvl", "resources/levels/testlevel2.lvl", NULL};
+char *level_names[] = {"resources/levels/level1.lvl", NULL};
 
 struct level level_init(SDL_Renderer *renderer, char *level_name)
 {
@@ -32,24 +32,19 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
     int cursor = 0;
 
-    temp.level_image = load_image(renderer, data);
-
-    SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
     int file_name_length = strlen(data) + 1;
-
     cursor += file_name_length;
+
+    temp.level_image = NULL;
+
     if (renderer)
     {
         temp.level_image = load_image(renderer, data);
         SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
     }
-    else
-    {
-        temp.level_image = NULL;
-    }
 
     int music_name_length = strlen(data + cursor) + 1;
-    strncpy(temp.music_file, data + cursor, sizeof temp.music_file);
+    strncpy(temp.music_file, data + cursor, 256);
     cursor += music_name_length;
 
     int *coll_dat = (int *)((char *)data + cursor);
@@ -60,7 +55,7 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
     coll_dat += 4;
 
-    printf("rects: %d\n", temp.num_boxes);
+    //printf("rects: %d\n", temp.num_boxes);
 
     temp.collision_boxes = calloc(temp.num_boxes, sizeof(SDL_Rect));
     for (int i = 0; i < temp.num_boxes; i++)
@@ -81,9 +76,9 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
         temp.spawn_points[i].x = coll_dat[i * 2 + 0];
         temp.spawn_points[i].y = coll_dat[i * 2 + 1];
 
-        printf("%d, %d\n", temp.spawn_points[i].x, temp.spawn_points[i].y);
+        //printf("%d, %d\n", temp.spawn_points[i].x, temp.spawn_points[i].y);
     }
-
+    
     coll_dat += 4 * 2;
 
     temp.start_boxes = calloc(temp.num_start_boxes, sizeof(SDL_Rect));
@@ -124,8 +119,9 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
     }
 
     coll_dat += temp.num_cp_2 * 4;
+    temp.scale_factor = coll_dat[0];
 
-    temp.scale_factor = 2;
+    //temp.scale_factor = 2;
 
     return temp;
 }

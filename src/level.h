@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-#define NUM_LEVELS 2
+#define NUM_LEVELS 1
 
 extern char *level_names[];
 
@@ -21,7 +21,7 @@ struct level {
   SDL_Rect * cp_2;
   int num_cp_2;
   double scale_factor;
-  char music_file[32];
+  char music_file[256];
 };
 
 //renderer may be NULL, indicating no level image will be loaded
