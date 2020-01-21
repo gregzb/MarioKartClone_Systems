@@ -9,6 +9,14 @@
 ## Description
 This is a top-down kart-racing game similar to Mario Kart or F-Zero with decent graphics, collisions, typical game logic, and networked multiplayer, with up to four concurrent players supported.
 
+## Required Libraries
+* SDL 2.0
+  * `sudo apt-get install libsdl2-dev`
+* SDL 2.0 TTF
+  * `sudo apt-get install libsdl2-ttf-dev`
+* pkg-config
+  * `sudo apt-get install pkg-config`
+
 ## How to Use:
 To build the game, run `make` (assuming all required libraries have been installed). To run the game, run `make run`. 
 
@@ -22,7 +30,7 @@ This is the primary mode. Have one person click the start "Create Multiplayer," 
 In the game, the A and D keys will rotate your kart while the W and S keys will allow you to move forward and backwards, respectively. You are unable to move through walls, but you can smooth move along them. You can only rotate while moving above a certain speed.
 
 ### End Game:
-To win the game, be the first to finish three laps around the track. All other players lose.
+To win the game, be the first to finish three laps around the track. All other players lose. After winning or losing, the player will be redirected to the main screen after 5 seconds.
  
 ### Returning to the menu:
  If at any time you wish to quit a game (or waiting period before a race starts) hit the Escape key to return to the menu.
@@ -30,18 +38,11 @@ To win the game, be the first to finish three laps around the track. All other p
 ## Known Bugs: 
 * The server may occasionally not shutdown requiring manual killing.
 * You may need to wait a minute between starting several servers.
-
-## Required Libraries
-* SDL 2.0
-  * `sudo apt-get install libsdl2-dev`
-* SDL 2.0 TTF
-  * `sudo apt-get install libsdl2-ttf-dev`
-* pkg-config
-  * `sudo apt-get install pkg-config`
   
-  ## Open source content 
+## Open source content 
   * We used SDL 2.0 to implement graphics and audio support.
   * We used [Simple-SDL2-Audio](https://github.com/jakebesworth/Simple-SDL2-Audio) as a wrapper around SDL audio functionality to facilitate development. The code was slightly modified, and is contained in `audio_utils.h` and `audio_utils.c`.
   * Used audio from https://www.youtube.com/watch?v=3UvgkDJV-YQ
   * Used audio from https://www.youtube.com/watch?v=PKQdWvVou1c
   * Used audio from https://www.youtube.com/watch?v=3nXl3re6vBI
+  * Makefile from https://spin.atomicobject.com/2016/08/26/makefile-c-projects/
