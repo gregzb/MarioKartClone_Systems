@@ -337,11 +337,13 @@ void game_loop()
 					{
 						printf("I WON!!!");
 						next_game_state = WIN;
+						next_multi_state = WAITING;
 					}
 					else
 					{
 						printf("I lost :(");
 						next_game_state = LOSS;
+						next_multi_state = WAITING;
 					}
 				}
 			}
@@ -409,6 +411,30 @@ void game_loop()
 				//This needs separate server side handling, send a win/lose packet
 				printf("I win!\n");
 			}
+		}
+
+		if (game_state == WIN)
+		{
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderClear(renderer);
+
+			char temp[128];
+			snprintf(temp, sizeof temp, "You win!");
+
+			render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 60, temp, (SDL_Color){60, 190, 90, 255});
+			SDL_RenderPresent(renderer);
+		}
+
+		if (game_state == LOSS)
+		{
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderClear(renderer);
+
+			char temp[128];
+			snprintf(temp, sizeof temp, "You lose!");
+
+			render_text(renderer, font, (SDL_Point){window_size.x / 2, window_size.y / 2}, 60, temp, (SDL_Color){200, 20, 10, 255});
+			SDL_RenderPresent(renderer);
 		}
 
 		game_state = next_game_state;
