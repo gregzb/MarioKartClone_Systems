@@ -406,7 +406,10 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-		kill(pid, SIGQUIT);
+		if (game_state == MULTIPLAYER)
+		{
+			kill(pid, SIGQUIT);
+		}
 	}
 }
 
