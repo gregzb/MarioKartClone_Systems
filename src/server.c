@@ -11,6 +11,7 @@
 #include "kart.h"
 #include "level.h"
 #include "time_util.h"
+#include "lap.h"
 
 #define CONNECT_COUNTDOWN 30
 
@@ -200,6 +201,7 @@ void server_instance()
                             //     kart_handle_collision(&clients[j].client.kart, &rect, dt);
                             // }
                             kart_move(&clients[i].client.kart, clients[i].wasd.y, clients[i].wasd.x, dt);
+                            clients[i].client.kart.completed_laps += lap_logic(&clients[i].client.kart, &levels[current_level]);
 
                             //handle collision with level
                             for (int j = 0; j < levels[current_level].num_boxes; j++)
