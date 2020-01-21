@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VEC2_INCLUDE
+#define VEC2_INCLUDE
 
 struct vec2 {
   double x;
@@ -36,3 +37,5 @@ vec2 v2_rotate(vec2 a, double angle);
 vec2 v2_normalize(vec2 a);
 
 void v2_print(vec2 a);
+
+#endif
