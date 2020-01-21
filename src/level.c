@@ -15,8 +15,6 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 {
     struct level temp;
 
-    printf("Loading level: %s\n", level_name);
-
     int fd = open(level_name, O_RDONLY);
     if (fd < 0)
     {

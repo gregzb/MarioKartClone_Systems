@@ -49,6 +49,8 @@ SDL_Renderer *renderer = NULL;
 struct timespec init_time;
 struct timespec last_time;
 
+struct timespec last_server_response;
+
 //SDL_Texture * bg_image;
 SDL_Texture *ship_tex = NULL;
 
@@ -220,6 +222,7 @@ void game_loop()
 			if (server_socket != -1)
 			{
 				next_game_state = MULTIPLAYER;
+				last_server_response = last_time;
 			}
 			else
 			{
@@ -227,7 +230,7 @@ void game_loop()
 			}
 		}
 
-		char conn_ok = 1;
+		bool conn_ok = true;
 
 		if (game_state == MULTIPLAYER)
 		{
@@ -244,7 +247,7 @@ void game_loop()
 					printf("Connection to server closed unexpectedly.\n");
 					next_multi_state = WAITING;
 					next_game_state = MENU;
-					conn_ok = 0;
+					conn_ok = false;
 					break;
 				}
 				else if (size < 0)
@@ -255,11 +258,13 @@ void game_loop()
 						//TODO: handle gracefully
 						next_multi_state = WAITING;
 						next_game_state = MENU;
-						conn_ok = 0;
+						conn_ok = false;
 						//exit(1);
 					}
 					break;
 				}
+
+				last_server_response = last_time;
 
 				switch (serv_msg.type)
 				{
@@ -279,7 +284,7 @@ void game_loop()
 						printf("Connection request was not accepted.\n");
 						next_multi_state = WAITING;
 						next_game_state = MENU;
-						conn_ok = 0;
+						conn_ok = false;
 						//exit(1);
 					}
 					break;
@@ -297,7 +302,7 @@ void game_loop()
 						printf("Error: unknown level received in start_race.\n");
 						next_multi_state = WAITING;
 						next_game_state = MENU;
-						conn_ok = 0;
+						conn_ok = false;
 					}
 
 					printf("Start race received.\n");
@@ -327,6 +332,13 @@ void game_loop()
 				}
 			}
 		}
+
+		if ((game_state == CONNECTING || game_state == MULTIPLAYER) && last_time.tv_sec - last_server_response.tv_sec >= 5)
+		{
+			next_game_state = MENU;
+			conn_ok = false;
+		}
+
 		if (game_state == MULTIPLAYER && conn_ok)
 		{
 
@@ -405,9 +417,10 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-		if (game_state == MULTIPLAYER)
+		if (game_state == MULTIPLAYER || game_state == CONNECTING)
 		{
 			kill(pid, SIGQUIT);
+			end_audio();
 		}
 	}
 }
