@@ -7,6 +7,7 @@
 
 #include "kart.h"
 #include "vec2.h"
+#include "sdl_utils.h"
 
 // const double CONSTANT_ACCEL = 100;//REMEMBER TO SET THESE PROPERLY BEFORE STARTING
 // const double MAX_ACCEL = 100000; //REMEMBER TO
@@ -24,6 +25,7 @@ struct kart kart_init()
   temp.velocity = (vec2){0};
   temp.acceleration = (vec2){0};
   temp.size = (SDL_Point){15, 15};
+  char progress[3] = {0};
   return temp;
 }
 
@@ -88,14 +90,17 @@ void kart_update_velocity(struct kart *current_kart, double dt)
 
 void kart_handle_collision(struct kart *current_kart, SDL_Rect *rect, double dt)
 {
-  SDL_Rect kart_rect = {current_kart->position.x, current_kart->position.y, current_kart->size.x, current_kart->size.y};
+  struct v2_rect kart_rect = {current_kart->position.x, current_kart->position.y, current_kart->size.x, current_kart->size.y};
   kart_rect.x -= kart_rect.w / 2;
   kart_rect.y -= kart_rect.h / 2;
-  SDL_Rect intersection = {0};
+
+  struct v2_rect other_rect = {rect->x, rect->y, rect->w, rect->h};
+
+  struct v2_rect intersection = {0};
 
   //printf("%d, %d, %d, %d, %f, %f\n", rect->x, rect->y, rect->w, rect->h, current_kart->position.x, current_kart->position.y);
 
-  char intersected = SDL_IntersectRect(&kart_rect, rect, &intersection);
+  char intersected = v2_rect_intersection(kart_rect, other_rect, &intersection);
 
   if (!intersected)
     return;

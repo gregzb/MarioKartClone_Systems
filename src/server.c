@@ -331,5 +331,6 @@ double min_loop_time(enum game_state state)
 
 void handle_sigquit(int signum)
 {
+    printf("Server restarting\n");
     restart = true;
 }

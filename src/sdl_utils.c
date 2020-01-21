@@ -2,6 +2,39 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include "vec2.h"
+#include "math.h"
+
+struct v2_rect v2_rect_from_vecs(vec2 top_left, vec2 bottom_right)
+{
+  struct v2_rect temp = {0};
+  temp.x = top_left.x;
+  temp.y = top_left.y;
+  temp.w = bottom_right.x - top_left.x;
+  temp.h = bottom_right.x - top_left.y;
+  return temp;
+}
+
+char v2_rect_intersection(struct v2_rect rect1, struct v2_rect rect2, struct v2_rect *intersection)
+{
+  if (rect1.x < rect2.x + rect2.w &&
+      rect1.x + rect1.w > rect2.x &&
+      rect1.y < rect2.y + rect2.h &&
+      rect1.y + rect1.h > rect2.y)
+  {
+    intersection->x = fmax(rect1.x, rect2.x);
+    intersection->y = fmax(rect1.y, rect2.y);
+    intersection->w = fmin(rect1.x + rect1.w, rect2.x + rect2.w) - intersection->x;
+    intersection->h = fmin(rect1.y + rect1.h, rect2.y + rect2.h) - intersection->y;
+    return 1;
+  }
+  return 0;
+}
+
+void v2_rect_print(struct v2_rect rect)
+{
+  printf("r{%lf, %lf, %lf, %lf}\n", rect.x, rect.y, rect.w, rect.h);
+}
 
 SDL_Texture *load_image(SDL_Renderer *renderer, char *file_name)
 {
@@ -59,7 +92,7 @@ char render_button(SDL_Renderer *renderer, SDL_Rect *bounds, SDL_Color color, TT
   return temp;
 }
 
-void render_text(SDL_Renderer *renderer, TTF_Font* font, SDL_Point pos, int text_height, char *text, SDL_Color color)
+void render_text(SDL_Renderer *renderer, TTF_Font *font, SDL_Point pos, int text_height, char *text, SDL_Color color)
 {
   SDL_Surface *solid = TTF_RenderText_Solid(font, text, color);
   SDL_Texture *text_texture = surface_to_texture(renderer, solid);

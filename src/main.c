@@ -31,6 +31,7 @@ void game_loop();
 void render_menu(double dt);
 void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
+void game_code(double dt);
 
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
@@ -351,38 +352,34 @@ void game_loop()
 				struct current_inputs inputs = {.wasd = wasd, .id = clients[0].id};
 				packet.data.current_inputs = inputs;
 
-				kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
-				for (int j = 0; j < num_clients; j++)
-				{
-					for (int i = 0; i < current_level->num_boxes; i++)
-					{
-						SDL_Rect rect = current_level->collision_boxes[i];
-						kart_handle_collision(&clients[j].kart, &rect, dt);
-					}
-				}
-				render_game(dt);
+				game_code(dt);
 			}
 			write(server_socket, &packet, sizeof packet);
 		}
 
 		if (game_state == SINGLE_PLAYER)
 		{
-			kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
-			for (int j = 0; j < num_clients; j++)
-			{
-				for (int i = 0; i < current_level->num_boxes; i++)
-				{
-					SDL_Rect rect = current_level->collision_boxes[i];
-					kart_handle_collision(&clients[j].kart, &rect, dt);
-				}
-			}
-			render_game(dt);
+			game_code(dt);
 		}
 
 		game_state = next_game_state;
 		multi_state = next_multi_state;
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
+}
+
+void game_code(double dt)
+{
+	kart_move(&clients[0].kart, wasd.y, wasd.x, dt);
+	for (int j = 0; j < num_clients; j++)
+	{
+		for (int i = 0; i < current_level->num_boxes; i++)
+		{
+			SDL_Rect rect = current_level->collision_boxes[i];
+			kart_handle_collision(&clients[j].kart, &rect, dt);
+		}
+	}
+	render_game(dt);
 }
 
 void process_input(int type, SDL_Keysym keysym)
