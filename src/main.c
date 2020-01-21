@@ -336,6 +336,7 @@ void game_loop()
 
 		if ((game_state == CONNECTING || game_state == MULTIPLAYER) && last_time.tv_sec - last_server_response.tv_sec >= 5)
 		{
+			next_multi_state = WAITING;
 			next_game_state = MENU;
 			conn_ok = false;
 		}
@@ -456,6 +457,7 @@ void process_input(int type, SDL_Keysym keysym)
 
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
+		next_multi_state = WAITING;
 		next_game_state = MENU;
 		pause_audio();
 	}
@@ -496,6 +498,7 @@ void render_menu(double dt)
 	if (mouse_over_single && mouse_clicked)
 	{
 		next_game_state = SINGLE_PLAYER;
+		next_multi_state = WAITING;
 		unpause_audio();
 		play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 	}
@@ -510,8 +513,10 @@ void render_menu(double dt)
 		bool msg = true;
 		kill(pid, SIGQUIT);
 		write(server_pipe[1], &msg, sizeof msg);
+		SDL_Delay(250);
 		strncpy(server_ip, "127.0.0.1", 15);
 		next_game_state = CONNECTING;
+		next_multi_state = WAITING;
 		SDL_Delay(250);
 	}
 
@@ -528,6 +533,7 @@ void render_menu(double dt)
 		if (server_ip[14] == '\n')
 			server_ip[14] = 0;
 		next_game_state = CONNECTING;
+		next_multi_state = WAITING;
 		SDL_Delay(250);
 	}
 
