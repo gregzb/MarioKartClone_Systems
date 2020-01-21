@@ -408,9 +408,10 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-		if (game_state == MULTIPLAYER)
+		if (game_state == MULTIPLAYER || game_state == CONNECTING)
 		{
 			kill(pid, SIGQUIT);
+			end_audio();
 		}
 	}
 }
