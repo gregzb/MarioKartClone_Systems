@@ -8,6 +8,13 @@ __1/[date]/20__ [NAME]:
 
 [WHAT DID YOU DO?]
 
+__1/19/20__ Sunan: Helped find and test use of a generic racing soundtrack in the game background.
+
+__1/18/20__ Sunan: Tried to adjust collision code after realization on how collisions work traditionally on Mario Kart. Tried to implement it so that collision head on would result in the kart stopping, and collision at an angle would cause it to slide along the terrain. 
+
+__1/16/20__ Sunan:
+Researched and got familiar with SDL Rect and functions such as SDL_IntersectRect in order to make an attempt at basic collision code between kart and terrain.
+
 
 __1/15/20__ Darius:
 
