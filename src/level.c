@@ -76,7 +76,7 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
         //printf("%d, %d\n", temp.spawn_points[i].x, temp.spawn_points[i].y);
     }
-    
+
     coll_dat += 4 * 2;
 
     temp.start_boxes = calloc(temp.num_start_boxes, sizeof(SDL_Rect));
@@ -123,4 +123,15 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
     //temp.scale_factor = 2;
 
     return temp;
+}
+
+void level_free(struct level *level, char server)
+{
+    if (!server) {
+        SDL_DestroyTexture(level->level_image);
+    }
+    free(level->collision_boxes);
+    free(level->start_boxes);
+    free(level->cp_1);
+    free(level->cp_2);
 }

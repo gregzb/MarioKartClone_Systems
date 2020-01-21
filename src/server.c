@@ -330,6 +330,11 @@ void server_instance()
             {
                 close(clients[i].socket_descriptor);
             }
+
+            for (int i = 0; i < num_levels; i++) {
+                level_free(&levels[i], 1);
+            }
+
             return;
         }
     }

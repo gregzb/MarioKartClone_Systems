@@ -27,5 +27,6 @@ struct level {
 
 //renderer may be NULL, indicating no level image will be loaded
 struct level level_init(SDL_Renderer* renderer, char* level_name);
+void level_free(struct level *level, char server);
 
 #endif

@@ -350,13 +350,13 @@ void game_loop()
 				case END_RACE:
 					if (serv_msg.data.end_race.won_race)
 					{
-						printf("I WON!!!");
+						printf("I WON!!!\n");
 						next_game_state = WIN;
 						next_multi_state = WAITING;
 					}
 					else
 					{
-						printf("I lost :(");
+						printf("I lost :(\n");
 						next_game_state = LOSS;
 						next_multi_state = WAITING;
 					}
