@@ -68,8 +68,6 @@ void server_main(int read_pipe)
 
 void server_instance()
 {
-    printf("Starting network code.\n");
-
     srand(time(NULL));
 
     int socket = server_setup();
@@ -147,7 +145,6 @@ void server_instance()
                      .client = client,
                      .wasd = {0}};
                 clients[num_clients++] = new_client;
-                printf("(testing server) new client connected; %zd clients\n", num_clients);
                 countdown_start = current_time;
             }
             else
@@ -288,8 +285,6 @@ void server_instance()
             packet.data.client_positions.num_clients = num_clients;
         }
 
-        //printf("Sending message type %d\n", (int)packet.type);
-
         //send packet to all clients
         for (int i = 0; i < num_clients; i++)
         {
@@ -336,6 +331,5 @@ double min_loop_time(enum game_state state)
 
 void handle_sigquit(int signum)
 {
-    printf("Caught SIGQUIT.\n");
     restart = true;
 }
