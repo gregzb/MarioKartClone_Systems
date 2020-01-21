@@ -14,6 +14,7 @@ struct v2_rect
 
 struct v2_rect v2_rect_from_vecs(vec2 top_left, vec2 bottom_right);
 char v2_rect_intersection(struct v2_rect rect1, struct v2_rect rect2, struct v2_rect *intersection);
+struct v2_rect v2_rect_from_SDL_Rect(SDL_Rect rect);
 void v2_rect_print(struct v2_rect rect);
 
 SDL_Texture *load_image(SDL_Renderer *renderer, char *file_name);

@@ -15,6 +15,7 @@ struct kart {
   struct vec2 acceleration;
   SDL_Point size;
   char progress[3];
+  int completed_laps;
 };
 
 

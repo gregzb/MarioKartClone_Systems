@@ -32,6 +32,7 @@ void render_menu(double dt);
 void render_game(double dt);
 void process_input(int type, SDL_Keysym keysym);
 void game_code(double dt);
+char lap_logic();
 
 SDL_Point window_size = {1280, 720};
 SDL_Point wasd = {0, 0};
@@ -66,9 +67,10 @@ enum game_state
 	MENU = 0,
 	SINGLE_PLAYER,
 	//single player only
-	PAUSED,
 	CONNECTING,
-	MULTIPLAYER
+	MULTIPLAYER,
+	WIN,
+	LOSS
 };
 
 enum multiplayer_state
@@ -385,6 +387,13 @@ void game_loop()
 		if (game_state == SINGLE_PLAYER)
 		{
 			game_code(dt);
+			if (clients[0].kart.completed_laps >= 3)
+			{
+				next_game_state = WIN;
+				next_multi_state = WAITING;
+				//This needs separate server side handling, send a win/lose packet
+				printf("I win!\n");
+			}
 		}
 
 		game_state = next_game_state;
@@ -405,34 +414,97 @@ void game_code(double dt)
 		}
 	}
 
+	char lap_completed = lap_logic();
+	clients[0].kart.completed_laps += lap_completed;
+
+	//printf("%d %d %d\n", progress[0], progress[1], progress[2]);
+
+	render_game(dt);
+}
+
+//Oops its disgusting
+char lap_logic()
+{
+	char temp = 0;
+	struct v2_rect kart_rect = {clients[0].kart.position.x, clients[0].kart.position.y, clients[0].kart.size.x, clients[0].kart.size.y};
+	kart_rect.x -= kart_rect.w / 2;
+	kart_rect.y -= kart_rect.h / 2;
+
+	struct v2_rect intersection = {0};
+
 	char progress[3];
 	memcpy(progress, clients[0].kart.progress, 3);
 
 	char intersecting = 0;
 	for (int i = 0; i < current_level->num_start_boxes; i++)
 	{
-		SDL_Rect rect = current_level->start_boxes[i];
-		struct v2_rect kart_rect = {clients[0].kart.position.x, clients[0].kart.position.y, clients[0].kart.size.x, clients[0].kart.size.y};
-		kart_rect.x -= kart_rect.w / 2;
-		kart_rect.y -= kart_rect.h / 2;
+		struct v2_rect other_rect = v2_rect_from_SDL_Rect(current_level->start_boxes[i]);
 
-		struct v2_rect other_rect = {rect.x, rect.y, rect.w, rect.h};
-
-		struct v2_rect intersection = {0};
 		intersecting = v2_rect_intersection(kart_rect, other_rect, &intersection);
 		if (intersecting)
 		{
-			if (progress[0] && progress[1] && progress[2]) {
-				printf("FINISHED A LAP!\n");
+			if (progress[0] && progress[1] && progress[2])
+			{
+				temp = 1;
 			}
-			progress[0] = 1;
-			progress[1] = 0;
-			progress[2] = 0;
+			clients[0].kart.progress[0] = 1;
+			clients[0].kart.progress[1] = 0;
+			clients[0].kart.progress[2] = 0;
 			break;
 		}
 	}
 
-	render_game(dt);
+	intersecting = 0;
+
+	for (int i = 0; i < current_level->num_cp_1; i++)
+	{
+		struct v2_rect other_rect = v2_rect_from_SDL_Rect(current_level->cp_1[i]);
+
+		intersecting = v2_rect_intersection(kart_rect, other_rect, &intersection);
+		if (intersecting)
+		{
+			if (progress[0])
+			{
+				clients[0].kart.progress[0] = 1;
+				clients[0].kart.progress[1] = 1;
+				clients[0].kart.progress[2] = 0;
+			}
+			else
+			{
+				clients[0].kart.progress[0] = 0;
+				clients[0].kart.progress[1] = 0;
+				clients[0].kart.progress[2] = 0;
+			}
+			break;
+		}
+	}
+
+	intersecting = 0;
+
+	for (int i = 0; i < current_level->num_cp_2; i++)
+	{
+		struct v2_rect other_rect = v2_rect_from_SDL_Rect(current_level->cp_2[i]);
+
+		intersecting = v2_rect_intersection(kart_rect, other_rect, &intersection);
+		if (intersecting)
+		{
+			if (progress[0] && progress[1])
+			{
+				clients[0].kart.progress[0] = 1;
+				clients[0].kart.progress[1] = 1;
+				clients[0].kart.progress[2] = 1;
+			}
+			else
+			{
+				clients[0].kart.progress[0] = 0;
+				clients[0].kart.progress[1] = 0;
+				clients[0].kart.progress[2] = 0;
+			}
+			break;
+		}
+	}
+
+	return temp;
 }
 
 void process_input(int type, SDL_Keysym keysym)
@@ -598,6 +670,11 @@ void render_game(double dt)
 		SDL_RenderFillRect(renderer, &kart_render_pos);
 		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180 + v2_angle(clients[i].kart.direction) * (180 / M_PI) + 90, NULL, 0);
 	}
+
+	char temp[128];
+	snprintf(temp, sizeof temp, "Lap: %d/3", clients[0].kart.completed_laps+1);
+
+	render_text(renderer, font, (SDL_Point){100, 30}, 60, temp, (SDL_Color){127, 127, 200, 255});
 
 	SDL_RenderPresent(renderer);
 }
