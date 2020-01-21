@@ -20,6 +20,7 @@
 #include "level.h"
 #include "sdl_utils.h"
 #include "networking.h"
+#include "audio_utils.h"
 
 char init_sdl();
 char init_window();
@@ -85,11 +86,13 @@ struct level levels[NUM_LEVELS];
 //todo: initialize this in single_player instead, maybe
 struct level *current_level;
 
+int pid;
+
 int main(int argc, char *args[])
 {
 
 	error_check(pipe(server_pipe), "created pipe.");
-	int pid = fork();
+	pid = fork();
 
 	error_check(pid, "forking process.");
 
@@ -105,9 +108,10 @@ int main(int argc, char *args[])
 
 	if (!(init_sdl() && init_window() && init_renderer() && init_text()))
 	{
-		kill(pid, SIGKILL);
 		return -1;
 	}
+
+	init_audio();
 
 	game_state = MENU;
 	next_game_state = game_state;
@@ -284,6 +288,8 @@ void game_loop()
 					{
 						printf("Playing level %d\n", serv_msg.data.start_race.level);
 						current_level = &levels[serv_msg.data.start_race.level];
+						printf("Music file: %s\n", current_level->music_file);
+						play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 					}
 					else
 					{
@@ -402,8 +408,7 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-
-		//DARIUS, NEXTWORKING CLEANUP HERE
+		kill(pid, SIGQUIT);
 	}
 }
 
@@ -442,6 +447,7 @@ void render_menu(double dt)
 	if (mouse_over_single && mouse_clicked)
 	{
 		next_game_state = SINGLE_PLAYER;
+		play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 	}
 
 	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};

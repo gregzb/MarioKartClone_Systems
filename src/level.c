@@ -32,16 +32,20 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
     int cursor = 0;
 
+    int file_name_length = strlen(data) + 1;
+    cursor += file_name_length;
+
+    temp.level_image = NULL;
+
     if (renderer)
     {
         temp.level_image = load_image(renderer, data);
         SDL_QueryTexture(temp.level_image, NULL, NULL, &temp.size.x, &temp.size.y);
     }
-    else
-        temp.level_image = NULL;
 
-    int file_name_length = strlen(data) + 1;
-    cursor += file_name_length;
+    int music_name_length = strlen(data + cursor) + 1;
+    strncpy(temp.music_file, data + cursor, 256);
+    cursor += music_name_length;
 
     int *coll_dat = (int *)((char *)data + cursor);
     temp.num_boxes = coll_dat[0];
@@ -74,7 +78,7 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
         //printf("%d, %d\n", temp.spawn_points[i].x, temp.spawn_points[i].y);
     }
-
+    
     coll_dat += 4 * 2;
 
     temp.start_boxes = calloc(temp.num_start_boxes, sizeof(SDL_Rect));

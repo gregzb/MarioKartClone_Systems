@@ -39,17 +39,35 @@ void remove_client(struct client_connection *clients, size_t *length, size_t ind
 //gets dt time depending on game state
 double min_loop_time(enum game_state);
 
+void server_instance();
+
+void handle_sigquit(int signum);
+
+bool restart;
+
 void server_main(int read_pipe)
 {
-    printf("Waiting for pipe write from main process.\n");
+    struct sigaction action = {0};
+    action.sa_handler = &handle_sigquit;
+    sigaction(SIGQUIT, &action, NULL);
 
-    //TODO: use data type conveying meaning
+    while (true)
+    {
+        //TODO: use data type conveying meaning
 
-    bool buffer;
+        bool buffer;
 
-    //block until we are told to start network code
-    read(read_pipe, &buffer, sizeof buffer);
+        //block until we are told to start network code
+        read(read_pipe, &buffer, sizeof buffer);
 
+        restart = false;
+
+        server_instance();
+    }
+}
+
+void server_instance()
+{
     printf("Starting network code.\n");
 
     srand(time(NULL));
@@ -66,14 +84,13 @@ void server_main(int read_pipe)
     struct level levels[8];
     int num_levels = 0;
 
-    for(int i = 0; level_names[i] != NULL; i++)
+    for (int i = 0; level_names[i] != NULL; i++)
     {
         levels[i] = level_init(NULL, level_names[i]);
         num_levels++;
     }
 
-    //int current_level = rand() % NUM_LEVELS;
-    int current_level = 1;
+    int current_level = 0;
 
     //time at which countdown begins
     struct timespec countdown_start;
@@ -93,6 +110,10 @@ void server_main(int read_pipe)
         {
             continue;
         }
+
+        //exit if parent no longer exists
+        if (getppid() == 1)
+            exit(0);
 
         // UNCOMMENT
         // if (num_clients < MIN_CLIENTS) {
@@ -276,6 +297,17 @@ void server_main(int read_pipe)
         }
 
         game_state = next_game_state;
+
+        if (restart)
+        {
+            close(socket);
+
+            for (int i = 0; i < num_clients; i++)
+            {
+                close(clients[i].socket_descriptor);
+            }
+            return;
+        }
     }
 }
 
@@ -300,4 +332,9 @@ double min_loop_time(enum game_state state)
     default:
         return 1.0 / 60.0;
     }
+}
+
+void handle_sigquit(int signum)
+{
+    restart = true;
 }
