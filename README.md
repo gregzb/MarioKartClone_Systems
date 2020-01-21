@@ -17,6 +17,9 @@ After game start up, click "Single Player" in the menu. Your kart will be spawne
  
  ### To play Multiplayer: 
 Have one person click the start "Create Multiplayer," while all other players click "Join Multiplayer." Players who click "Join Multiplayer" will be prompted to enter the IP address of the hosting computer on the command line in order to connect to it. A countdown will appear on the screen and when it reaches 0, the game will start. The countdown will be reset whenever a client joins the server until its maximum capacity is reached. Each player will be spawned on a track, and in order to win the game, they must complete one lap around the track. They will each be able to move using the WASD keys (similar to the single player version), collide into walls and into other players. <INCLUDE FURTHER DESCRIPTION>
+ 
+ ## Returning to the menu:
+ If at any time you wish to quit a game (or waiting period before a race starts) hit the Escape key to return to the menu.
 
 ## Known Bugs: 
 
