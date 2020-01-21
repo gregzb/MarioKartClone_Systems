@@ -154,8 +154,6 @@ int main(int argc, char *args[])
 
 	game_loop();
 
-	//close server process
-	kill(pid, SIGKILL);
 	return 0;
 }
 
@@ -201,6 +199,7 @@ void game_loop()
 		if (game_state == MENU)
 		{
 			render_menu(dt);
+			pause_audio();
 		}
 
 		if (game_state == CONNECTING)
@@ -339,6 +338,17 @@ void game_loop()
 			conn_ok = false;
 		}
 
+		if ((game_state == CONNECTING || game_state == MULTIPLAYER) && next_game_state == MENU)
+		{
+			conn_ok = false;
+		}
+
+		if (!conn_ok)
+		{
+			close(server_socket);
+			kill(pid, SIGQUIT);
+		}
+
 		if (game_state == MULTIPLAYER && conn_ok)
 		{
 
@@ -442,11 +452,6 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
-		if (game_state == MULTIPLAYER || game_state == CONNECTING)
-		{
-			kill(pid, SIGQUIT);
-			end_audio();
-		}
 	}
 }
 
@@ -496,6 +501,7 @@ void render_menu(double dt)
 	if (mouse_over_create && mouse_clicked)
 	{
 		bool msg = true;
+		kill(pid, SIGQUIT);
 		write(server_pipe[1], &msg, sizeof msg);
 		strncpy(server_ip, "127.0.0.1", 15);
 		next_game_state = CONNECTING;
