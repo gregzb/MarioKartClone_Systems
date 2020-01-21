@@ -82,12 +82,16 @@ __1/11/20__ Greg:
 
 doot.goot. Some refactoring, added level type, added level struct, Made the Kart rotate around the ship. 
 
+__1/10/20__ Greg:
+
+Reworked kart struct functions. Removed several functions, updated movement logic, added drag. Began rendering kart to screen. Added level file creation to python script. Added level file struct to game and began working on a level file parsing function. Allow screen to move around point instead of letting poitn move around screen.
+
 __1/9/20__ Sunan:
 Worked on some basic networking and servers based off of MR. DWs boilerplate and Darius' progress. Looked into listening for server and countdown functions based off Darius' skeleton.
 
 __1/8/20__ Greg:
 
-Worked on the collision generator. Refactored SOMETHING SOMETHING SOMETHING. Update py collision code. 
+Updated/added/refactored timing code. Frames should now be more consistently 1/60 seconds long. Added image loading code. Integrated my code with Darius's networking code. Created a python script to generate level files for the game. Updated several vector functions. Edited makefile. Slightly refactored project structure. Added code to python script to actually recognize collision boxes from an image.
 
 
 __1/8/20__ Emma:
@@ -98,6 +102,16 @@ Realized new method will still not mimic the Mario Kart physics properly. Comple
 __1/8/20__ Darius:
 
 Merged incoming and local. Completed skeleton of potential networking protocol. The networking protocol will use two packet types: one sent by the server and one by clients. A type field will store which field of a data union is active, ensuring saved packet space. Also added skeleton of future code within server_main. Added. Mr. DW's boilerplate to create a server socket. 
+
+
+__1/7/20__ Greg:
+
+Added support for SDL2, dealt with linking and compiling. Basic window and rectangle drawn on screen. Basic keyboard input is also supported. Added mathematical vectors and function to more easily deal with direction, velocity, acceleration, position, etc.
+
+
+__1/7/20__ TEAM:
+
+Added make
 
 
 __1/7/20__ TEAM:
