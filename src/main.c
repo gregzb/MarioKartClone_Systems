@@ -445,6 +445,7 @@ void render_menu(double dt)
 	if (mouse_over_single && mouse_clicked)
 	{
 		next_game_state = SINGLE_PLAYER;
+		play_music(current_level->music_file, 128);
 	}
 
 	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};
