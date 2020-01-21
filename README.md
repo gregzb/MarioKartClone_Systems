@@ -38,6 +38,7 @@ To win the game, be the first to finish three laps around the track. All other p
 ## Known Bugs: 
 * The server may occasionally not shutdown requiring manual killing.
 * You may need to wait a minute between starting several servers.
+* Because of the timing mechanism used, cpu usage is high, so launching several instance of the game on a single machine may cause lag.
   
 ## Open source content 
   * We used SDL 2.0 to implement graphics and audio support.
