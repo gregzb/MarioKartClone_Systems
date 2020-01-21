@@ -8,11 +8,17 @@ __1/[date]/20__ [NAME]:
 
 [WHAT DID YOU DO?]
 
+__1/21/20__ Emma: Created another track for a second alternate "level" using GIMP. Created both the basic collision box map and the "pretty" version with a completely different theme.
+
 __1/21/20__ Darius: Move lap logic from main into a separate set of files. Remove dependence on global variables, and add lap logic to the server. Also introduce messaging to tell clients when the game is over, utilizing lap count.
 
 __1/20/20__ Darius: Add music file support to the level data format. Also introduce wrapper library for SDL Audio, and call it to provide in-game music as dictated by currently active level. Finally, better handle pressing the escape key, "restarting" the server process (aka resetting its state) by sending it `SIGQUIT`. Tackle some of the subsequently introduced bugs.
 
+__1/19/20__ Emma: Created the "pretty" version, the version that the users will see as the track for the alternate level created the day before. Lots of experimentation had to be done with learning how to use GIMP.
+
 __1/19/20__ Darius: Modified level loading code so that it can work on server as well as client. Adjusted level loading code with error and sanity checks. Also introduced collision support into the multiplayer server, allowing for collision support both in single and multiplayer. Allow the level to be selected in the multiplayer server and sent to the client. (Multiple level support augmented)
+
+__1/19/20__ Emma: Created another track for an alternate "level" using GIMP. Created the basic collision box map.
 
 __1/19/20__ Sunan: Helped find and test use of a generic racing soundtrack in the game background.
 
@@ -20,11 +26,16 @@ __1/19/20__ Darius: Server process now kills itself when its parent is dead. Rem
 
 __1/18/20__ Darius: Kill the server process when main exits normally, so it does not remain as a zombie process preventing future servers.
 
-__1/18/20__ Sunan: Tried to adjust collision code after realization on how collisions work traditionally on Mario Kart. Tried to implement it so that collision head on would result in the kart stopping, and collision at an angle would cause it to slide along the terrain. 
+__1/18/20__ Sunan + Emma: Discussed a new way to make collisions work properly. Tried to adjust collision code after realization on how collisions work traditionally on Mario Kart (whcih differed significantly from our first two methods). Tried to implement it so that collision head on would result in the kart stopping, and collision at an angle would cause it to slide along the terrain. 
+
+__1/17/20__ Emma:
+Realized the current collision methods will not work and added in new physics code for the second idea for collisions. 
 
 __1/16/20__ Sunan:
 Researched and got familiar with SDL Rect and functions such as SDL_IntersectRect in order to make an attempt at basic collision code between kart and terrain.
 
+__1/16/20__ Emma: 
+Added in extra physics code so that current ideas for collisions could be done, such as reversing the current direction and velocity.
 
 __1/15/20__ Darius:
 
