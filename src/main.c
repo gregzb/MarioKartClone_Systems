@@ -343,7 +343,6 @@ void game_loop()
 					}
 
 					num_clients = serv_msg.data.client_positions.num_clients;
-					printf("%d clients\n", num_clients);
 
 					memcpy(clients, serv_msg.data.client_positions.clients, sizeof clients);
 				}
@@ -573,6 +572,7 @@ void render_menu(double dt)
 			clients[i].kart.position = (vec2) {current_level->spawn_points[i].x, current_level->spawn_points[i].y};
 			clients[i].kart.size = (SDL_Point) {current_level->kart_size, current_level->kart_size};
 		}
+		num_clients = 1;
 	}
 
 	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};
