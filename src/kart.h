@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 
 #include "vec2.h"
+#include "level.h"
 
 
 struct kart {

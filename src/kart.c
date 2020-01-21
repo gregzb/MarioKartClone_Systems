@@ -17,7 +17,7 @@ const double CONSTANT_ACCEL = 10;
 const double ROTATION_SPEED = 2.25;
 const double DRAG = 0.065;
 
-struct kart kart_init()
+struct kart kart_init(struct level *lvl)
 {
   struct kart temp = {0};
   temp.direction = (vec2){0, -1};

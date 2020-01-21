@@ -170,7 +170,8 @@ def main():
         for box in point2:
             f.write(box.get_bytes())
 
-        f.write(bytes([3]))
+        f.write((3).to_bytes(4, byteorder='little'))
+        f.write((15).to_bytes(4, byteorder='little'))
         
         print(len(boxes))
         print(boxes)

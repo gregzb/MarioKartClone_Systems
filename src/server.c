@@ -13,7 +13,7 @@
 #include "time_util.h"
 #include "lap.h"
 
-#define CONNECT_COUNTDOWN 30
+#define CONNECT_COUNTDOWN 10
 
 struct client_connection
 {
@@ -90,7 +90,7 @@ void server_instance()
         num_levels++;
     }
 
-    int current_level = 0;
+    int current_level = rand() % NUM_LEVELS;
 
     //time at which countdown begins
     struct timespec countdown_start;
@@ -116,9 +116,9 @@ void server_instance()
             exit(0);
 
         // UNCOMMENT
-        // if (num_clients < MIN_CLIENTS) {
-        //     clock_gettime(CLOCK_MONOTONIC, &countdown_start);
-        // }
+        if (num_clients < MIN_CLIENTS) {
+            clock_gettime(CLOCK_MONOTONIC, &countdown_start);
+        }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
 
@@ -237,8 +237,8 @@ void server_instance()
             }
 
             //if the countdown has elapsed and there are at least two players start
-            //else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients >= MIN_CLIENTS)
-            else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 0)
+            else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients >= MIN_CLIENTS)
+            //else if (current_time.tv_sec - countdown_start.tv_sec >= CONNECT_COUNTDOWN && num_clients > 0)
             {
                 next_game_state = BEGINNING_RACE;
             }
@@ -268,6 +268,8 @@ void server_instance()
             {
                 clients[i].client.kart.position.x = levels[current_level].spawn_points[i].x;
                 clients[i].client.kart.position.y = levels[current_level].spawn_points[i].y;
+                clients[i].client.kart.size.x = levels[current_level].kart_size;
+                clients[i].client.kart.size.y = levels[current_level].kart_size;
             }
 
             next_game_state = IN_RACE;
@@ -284,10 +286,11 @@ void server_instance()
             for (int i = 0; i < num_clients; i++)
             {
                 packet.data.client_positions.clients[i] = clients[i].client;
+                //printf("%i: %d %d %d\n", i, clients[i].client.kart.progress[0], clients[i].client.kart.progress[1], clients[i].client.kart.progress[2]);
             }
             packet.data.client_positions.num_clients = num_clients;
         }
-        else if (game_state == OUT_RACE) 
+        else if (game_state == OUT_RACE)
         {
             packet.type = END_RACE;
             struct end_race end_race = {0};
@@ -300,6 +303,10 @@ void server_instance()
             if (game_state == OUT_RACE)
             {
                 packet.data.end_race.won_race = clients[i].client.kart.completed_laps >= 3;
+                clients[i].client.kart.completed_laps = 0;
+                clients[i].client.kart.progress[0] = 0;
+                clients[i].client.kart.progress[1] = 0;
+                clients[i].client.kart.progress[2] = 0;
             }
             write(clients[i].socket_descriptor, &packet, sizeof packet);
         }

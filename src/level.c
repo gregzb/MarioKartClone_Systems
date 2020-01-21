@@ -9,7 +9,7 @@
 #include "level.h"
 #include "sdl_utils.h"
 
-char *level_names[] = {"resources/levels/level1.lvl", NULL};
+char *level_names[] = {"resources/levels/level1.lvl", "resources/levels/level2.lvl", "resources/levels/level3.lvl", NULL};
 
 struct level level_init(SDL_Renderer *renderer, char *level_name)
 {
@@ -118,6 +118,7 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
 
     coll_dat += temp.num_cp_2 * 4;
     temp.scale_factor = coll_dat[0];
+    temp.kart_size = coll_dat[1];
 
     //temp.scale_factor = 2;
 

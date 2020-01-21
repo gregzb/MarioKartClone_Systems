@@ -52,6 +52,8 @@ struct timespec last_time;
 
 struct timespec last_server_response;
 
+struct timespec end_game_time;
+
 //SDL_Texture * bg_image;
 SDL_Texture *ship_tex = NULL;
 
@@ -81,9 +83,11 @@ enum multiplayer_state
 
 enum game_state game_state;
 enum game_state next_game_state;
+enum game_state prev_game_state;
 
 enum multiplayer_state multi_state;
 enum multiplayer_state next_multi_state;
+enum multiplayer_state prev_multi_state;
 
 int seconds_until_game = 30;
 
@@ -93,9 +97,11 @@ struct level *current_level;
 
 int pid;
 
+char hosting;
+
 int main(int argc, char *args[])
 {
-
+	srand(time(NULL));
 	error_check(pipe(server_pipe), "created pipe.");
 	pid = fork();
 
@@ -119,6 +125,8 @@ int main(int argc, char *args[])
 	init_audio();
 	pause_audio();
 
+	hosting = 0;
+
 	game_state = MENU;
 	next_game_state = game_state;
 
@@ -134,10 +142,12 @@ int main(int argc, char *args[])
 		//printf("%d %d\n", levels[i].size.x, levels[i].size.y);
 	}
 
-	current_level = &levels[0];
+	current_level = &levels[rand() % NUM_LEVELS];
 
 	clock_gettime(CLOCK_MONOTONIC, &init_time);
 	last_time = init_time;
+
+	clock_gettime(CLOCK_MONOTONIC, &end_game_time);
 
 	// clients[0].kart = kart_init();
 	// clients[0].kart.position = (vec2){test_level.size.x, test_level.size.y};
@@ -153,7 +163,7 @@ int main(int argc, char *args[])
 
 	//printf("%lf, %lf\n", clients[1].kart.position.x, clients[1].kart.position.y);
 
-	num_clients = 4;
+	num_clients = 1;
 
 	game_loop();
 
@@ -201,6 +211,11 @@ void game_loop()
 
 		if (game_state == MENU)
 		{
+			if (prev_game_state != MENU)
+			{
+				hosting = 0;
+				pause_audio();
+			}
 			render_menu(dt);
 			//pause_audio();
 		}
@@ -325,9 +340,10 @@ void game_loop()
 
 							break;
 						}
-
-						num_clients = serv_msg.data.client_positions.num_clients;
 					}
+
+					num_clients = serv_msg.data.client_positions.num_clients;
+					printf("%d clients\n", num_clients);
 
 					memcpy(clients, serv_msg.data.client_positions.clients, sizeof clients);
 				}
@@ -345,6 +361,11 @@ void game_loop()
 						next_game_state = LOSS;
 						next_multi_state = WAITING;
 					}
+					clients[0].kart.completed_laps = 0;
+					clients[0].kart.progress[0] = 0;
+					clients[0].kart.progress[1] = 0;
+					clients[0].kart.progress[2] = 0;
+					conn_ok = false;
 				}
 			}
 		}
@@ -364,7 +385,10 @@ void game_loop()
 		if (!conn_ok)
 		{
 			close(server_socket);
-			kill(pid, SIGQUIT);
+			if (hosting)
+			{
+				kill(pid, SIGQUIT);
+			}
 		}
 
 		if (game_state == MULTIPLAYER && conn_ok)
@@ -415,6 +439,20 @@ void game_loop()
 
 		if (game_state == WIN)
 		{
+			if (prev_game_state != WIN)
+			{
+				pause_audio();
+				clock_gettime(CLOCK_MONOTONIC, &end_game_time);
+			}
+
+			double passed = get_delta_time(end_game_time);
+
+			if (passed > 5)
+			{
+				next_game_state = MENU;
+				next_multi_state = WAITING;
+			}
+
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			SDL_RenderClear(renderer);
 
@@ -427,6 +465,19 @@ void game_loop()
 
 		if (game_state == LOSS)
 		{
+			if (prev_game_state != LOSS)
+			{
+				pause_audio();
+				clock_gettime(CLOCK_MONOTONIC, &end_game_time);
+			}
+
+			double passed = get_delta_time(end_game_time);
+
+			if (passed > 5)
+			{
+				next_game_state = MENU;
+				next_multi_state = WAITING;
+			}
 			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 			SDL_RenderClear(renderer);
 
@@ -437,7 +488,10 @@ void game_loop()
 			SDL_RenderPresent(renderer);
 		}
 
+		prev_game_state = game_state;
 		game_state = next_game_state;
+
+		prev_multi_state = multi_state;
 		multi_state = next_multi_state;
 		clock_gettime(CLOCK_MONOTONIC, &last_time);
 	}
@@ -491,32 +545,15 @@ void process_input(int type, SDL_Keysym keysym)
 	}
 }
 
-// enum game_state process_choice_input(SDL_Keysym keysym)
-// {
-// 	bool msg = true;
-//
-// 	switch (keysym.sym)
-// 	{
-// 	case SDLK_o:
-// 		printf("Selected single player mode.\n");
-// 		return SINGLE_PLAYER;
-// 	case SDLK_m:
-// 		printf("Selected connection mode mode.\n");
-// 		return CONNECTING;
-// 	case SDLK_h:
-// 		write(server_pipe[1], &msg, sizeof msg);
-//
-// 		return CONNECTING;
-// 		printf("Selected hosting mode.\n");
-// 	default:
-// 		return MENU;
-// 	}
-// }
-
 void render_menu(double dt)
 {
 	SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255);
 	SDL_RenderClear(renderer);
+
+	char temp[128];
+	snprintf(temp, sizeof temp, "Mario Kart Clone");
+
+	render_text(renderer, font, (SDL_Point){window_size.x/2, 150}, 100, temp, (SDL_Color){30, 30, 120, 255});
 
 	SDL_Rect single_rect = {window_size.x / 2, 300, 600, 100};
 	single_rect.x -= single_rect.w / 2;
@@ -529,6 +566,13 @@ void render_menu(double dt)
 		next_multi_state = WAITING;
 		unpause_audio();
 		play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
+		current_level = &levels[rand() % NUM_LEVELS];
+		for (int i = 0; i < 4; i++)
+		{
+			clients[i].kart = kart_init();
+			clients[i].kart.position = (vec2) {current_level->spawn_points[i].x, current_level->spawn_points[i].y};
+			clients[i].kart.size = (SDL_Point) {current_level->kart_size, current_level->kart_size};
+		}
 	}
 
 	SDL_Rect multi_create = {window_size.x / 2, 450, 600, 100};
@@ -541,7 +585,7 @@ void render_menu(double dt)
 		bool msg = true;
 		kill(pid, SIGQUIT);
 		write(server_pipe[1], &msg, sizeof msg);
-		SDL_Delay(250);
+		hosting = 1;
 		strncpy(server_ip, "127.0.0.1", 15);
 		next_game_state = CONNECTING;
 		next_multi_state = WAITING;
@@ -622,10 +666,12 @@ void render_game(double dt)
 		kart_render_pos.h = clients[i].kart.size.y * current_level->scale_factor;
 		kart_render_pos.x = (int)added.x - kart_render_pos.w / 2;
 		kart_render_pos.y = (int)added.y - kart_render_pos.h / 2;
-		SDL_SetRenderDrawColor(renderer, 127, 40, 0, 255);
-		SDL_RenderFillRect(renderer, &kart_render_pos);
+		// SDL_SetRenderDrawColor(renderer, 127, 40, 0, 255);
+		// SDL_RenderFillRect(renderer, &kart_render_pos);
 		SDL_RenderCopyEx(renderer, ship_tex, NULL, &kart_render_pos, -(rot_angle * 180 / M_PI) + 180 + v2_angle(clients[i].kart.direction) * (180 / M_PI) + 90, NULL, 0);
 	}
+
+	// printf("???\n");
 
 	char temp[128];
 	snprintf(temp, sizeof temp, "Lap: %d/3", clients[0].kart.completed_laps + 1);
