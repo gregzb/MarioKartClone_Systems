@@ -332,6 +332,17 @@ void game_loop()
 					memcpy(clients, serv_msg.data.client_positions.clients, sizeof clients);
 				}
 				break;
+				case END_RACE:
+					if (serv_msg.data.end_race.won_race)
+					{
+						printf("I WON!!!");
+						next_game_state = WIN;
+					}
+					else
+					{
+						printf("I lost :(");
+						next_game_state = LOSS;
+					}
 				}
 			}
 		}

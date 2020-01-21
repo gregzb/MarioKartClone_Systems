@@ -30,7 +30,8 @@ enum game_state
 {
     WAITING_FOR_CLIENTS,
     BEGINNING_RACE,
-    IN_RACE
+    IN_RACE,
+    OUT_RACE
 };
 
 //removes clients[index] from clients, shifting
@@ -284,11 +285,30 @@ void server_instance()
             }
             packet.data.client_positions.num_clients = num_clients;
         }
+        else if (game_state == OUT_RACE) 
+        {
+            packet.type = END_RACE;
+            struct end_race end_race = {0};
+            packet.data.end_race = end_race;
+        }
 
         //send packet to all clients
         for (int i = 0; i < num_clients; i++)
         {
+            if (game_state == OUT_RACE)
+            {
+                packet.data.end_race.won_race = clients[i].client.kart.completed_laps >= 3;
+            }
             write(clients[i].socket_descriptor, &packet, sizeof packet);
+        }
+
+        for (int i = 0; i < num_clients; i++)
+        {
+            if (clients[i].client.kart.completed_laps >= 3)
+            {
+                next_game_state = OUT_RACE;
+                break;
+            }
         }
 
         game_state = next_game_state;

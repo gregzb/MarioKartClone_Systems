@@ -66,7 +66,8 @@ enum server_packet_type
     CONNECTION_REQUEST_RESPONSE,
     WAIT_STATUS,
     START_RACE,
-    CLIENT_POSITIONS
+    CLIENT_POSITIONS,
+    END_RACE
 };
 
 struct connection_response
@@ -96,6 +97,10 @@ struct client_positions
     int num_clients;
 };
 
+struct end_race {
+    bool won_race;
+};
+
 struct server_packet
 {
     enum server_packet_type type;
@@ -104,6 +109,7 @@ struct server_packet
         struct wait_status wait_status;
         struct start_race start_race;
         struct client_positions client_positions;
+        struct end_race end_race;
     } data;
 };
 
