@@ -13,7 +13,7 @@
 #include "time_util.h"
 #include "lap.h"
 
-#define CONNECT_COUNTDOWN 10
+#define CONNECT_COUNTDOWN 30
 
 struct client_connection
 {

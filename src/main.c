@@ -614,8 +614,6 @@ void render_menu(double dt)
 
 void render_game(double dt)
 {
-	double run_time = get_delta_time(init_time);
-
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 

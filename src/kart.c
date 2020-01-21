@@ -53,7 +53,7 @@ void kart_move(struct kart *current_kart, char acc, char lr, double dt)
   //printf("%lf %lf\n", v2_mag(current_kart->velocity), dt);
   //printf("doot: %f %f\n", (1-DRAG), (1 - DRAG * (dt*60)));
   current_kart->velocity = v2_mult(current_kart->velocity, (1 - DRAG * (dt * 60)));
-  if (v2_mag(current_kart->velocity) > dt * 20 || 1)
+  if (v2_mag(current_kart->velocity) > dt * 20)
   {
     kart_update_direction(current_kart, lr, dt);
   }

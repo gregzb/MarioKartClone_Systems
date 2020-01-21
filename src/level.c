@@ -25,7 +25,7 @@ struct level level_init(SDL_Renderer *renderer, char *level_name)
     {
         data[i] = 0;
     }
-    int data_size = read(fd, &data, 4096);
+    read(fd, &data, 4096);
     close(fd);
 
     int cursor = 0;
