@@ -335,8 +335,6 @@ static inline void play_audio(const char *filename, audio *audio, uint8_t loop, 
     }
 
     SDL_UnlockAudioDevice(gDevice->device);
-
-    unpause_audio();
 }
 
 static void add_music(struct audio *root, struct audio *new)

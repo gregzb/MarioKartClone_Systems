@@ -115,6 +115,7 @@ int main(int argc, char *args[])
 	}
 
 	init_audio();
+	pause_audio();
 
 	game_state = MENU;
 	next_game_state = game_state;
@@ -199,7 +200,7 @@ void game_loop()
 		if (game_state == MENU)
 		{
 			render_menu(dt);
-			pause_audio();
+			//pause_audio();
 		}
 
 		if (game_state == CONNECTING)
@@ -293,7 +294,8 @@ void game_loop()
 					{
 						printf("Playing level %d\n", serv_msg.data.start_race.level);
 						current_level = &levels[serv_msg.data.start_race.level];
-						printf("Music file: %s\n", current_level->music_file);
+						//printf("Music file: %s\n", current_level->music_file);
+						unpause_audio();
 						play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 					}
 					else
@@ -420,8 +422,11 @@ void game_code(double dt)
 		if (intersecting)
 		{
 			if (progress[0] && progress[1] && progress[2]) {
-				
+				printf("FINISHED A LAP!\n");
 			}
+			progress[0] = 1;
+			progress[1] = 0;
+			progress[2] = 0;
 			break;
 		}
 	}
@@ -452,6 +457,7 @@ void process_input(int type, SDL_Keysym keysym)
 	if (keysym.sym == SDLK_ESCAPE && type == SDL_KEYDOWN)
 	{
 		next_game_state = MENU;
+		pause_audio();
 	}
 }
 
@@ -490,6 +496,7 @@ void render_menu(double dt)
 	if (mouse_over_single && mouse_clicked)
 	{
 		next_game_state = SINGLE_PLAYER;
+		unpause_audio();
 		play_music(current_level->music_file, SDL_MIX_MAXVOLUME);
 	}
 
