@@ -132,6 +132,7 @@ void server_instance()
 
             //rejected if MAX_CLIENTS reached or we're not waiting for clients
             response.accepted = !(num_clients >= MAX_CLIENTS) && game_state == WAITING_FOR_CLIENTS;
+            //printf("accepted: %d\n", response.accepted);
             response.id = next_id;
 
             packet.data.connection_request_response = response;
